@@ -1,38 +1,45 @@
 // app.js
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
-const swaggerUi = require('swagger-ui-express'); // Importar swagger-ui
-const YAML = require('yamljs'); // Importar yamljs
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
 
 const database = require('./src/config/database');
 const apiRoutes = require('./src/api');
 const errorHandler = require('./src/middlewares/errorHandler');
 
-// Carrega o arquivo swagger.yaml
 const swaggerDocument = YAML.load('./swagger.yaml');
 
 database.startup().then(() => {
     const app = express();
     app.use(express.json());
 
-    // Rota para a documentação da API
+    // --- ROTAS DA API E DOCUMENTAÇÃO (PRIMEIRO) ---
+    // A ordem aqui é crucial. Rotas específicas primeiro.
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-    // Middleware para as rotas da API
     app.use('/api', apiRoutes);
 
-    // Rota raiz redireciona para a documentação
-    app.get('/', (req, res) => {
-        res.redirect('/api-docs');
-    });
+    // --- SERVIR ARQUIVOS DO FRONTEND (SEGUNDO) ---
+    // Serve a pasta 'static'
+    app.use(express.static(path.join(__dirname, 'static')));
 
-    // MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO)
+    // --- ROTA "CATCH-ALL" PARA A SPA ---
+    // QUALQUER outra requisição GET que não foi resolvida até aqui
+    // (não é API, não é um arquivo estático) deve servir o index.html
+    // Isso é essencial para o roteamento do frontend funcionar ao recarregar a página.
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'index.html'));
+});
+
+    // --- MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO) ---
     app.use(errorHandler);
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
         console.log(`Servidor rodando na porta ${PORT}`);
-        console.log(`Acesse a documentação em http://localhost:${PORT}/api-docs`);
+        console.log(`Frontend disponível em http://localhost:${PORT}`);
+        console.log(`Documentação em http://localhost:${PORT}/api-docs`);
     });
 
 }).catch(err => {
