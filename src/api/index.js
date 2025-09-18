@@ -2,14 +2,16 @@
 const express = require('express');
 const router = express.Router();
 
-// Importe os arquivos de rota aqui quando forem criados
-// const clienteRoutes = require('./clientes.routes');
+// Importe os arquivos de rota aqui
+const clienteRoutes = require('./clientes.routes');
+const investimentoRoutes = require('./investimentos.routes'); // <-- IMPORTAR
 
 router.get('/', (req, res) => {
     res.json({ message: 'Bem-vindo à API de Recomendação de Investimentos!' });
 });
 
 // Use as rotas aqui
-// router.use('/clientes', clienteRoutes);
+router.use('/clientes', clienteRoutes);
+router.use('/investimentos', investimentoRoutes); // <-- USAR AQUI
 
 module.exports = router;

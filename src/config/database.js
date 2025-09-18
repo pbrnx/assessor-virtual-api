@@ -1,8 +1,9 @@
 // src/config/database.js
 require('dotenv').config();
+const oracledb = require('oracledb');
 
-// Exemplo para OracleDB, mas pode ser adaptado
-// const oracledb = require('oracledb');
+// Melhora o formato do resultado das queries
+oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 const dbConfig = {
     user: process.env.DB_USER,
@@ -10,33 +11,49 @@ const dbConfig = {
     connectString: process.env.DB_URL
 };
 
+let pool;
+
 async function startup() {
-  console.log("Iniciando conexão com o banco de dados...");
+  console.log("Iniciando pool de conexões com o Oracle...");
   try {
-    // Lógica de inicialização do pool de conexões
-    // Ex: await oracledb.createPool(dbConfig);
-    console.log("Banco de dados conectado com sucesso.");
+    pool = await oracledb.createPool(dbConfig);
+    console.log("Pool de conexões iniciado com sucesso.");
   } catch (err) {
-    console.error("Erro ao conectar com o banco de dados:", err);
-    process.exit(1); // Encerra a aplicação se não conseguir conectar
+    console.error("Erro fatal ao iniciar o pool de conexões:", err);
+    process.exit(1);
   }
 }
 
 async function shutdown() {
-  console.log("Fechando conexão com o banco de dados...");
+  console.log("Fechando pool de conexões...");
   try {
-    // Lógica para fechar o pool de conexões
-    // Ex: await oracledb.getPool().close(10);
-    console.log("Conexão com o banco de dados fechada.");
+    if (pool) {
+      await pool.close(10);
+      console.log("Pool de conexões fechado.");
+    }
   } catch (err) {
-    console.error("Erro ao fechar a conexão:", err);
+    console.error("Erro ao fechar o pool de conexões:", err);
   }
 }
 
-async function execute(sql, binds = [], options = {}) {
-    // Lógica para executar uma query
-    console.log(`Executando: ${sql} com binds: ${binds}`);
-    return { rows: [] }; // Retorno de exemplo
+async function execute(sql, binds = [], options = { autoCommit: false }) {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const result = await connection.execute(sql, binds, options);
+    return result;
+  } catch (err) {
+    console.error("Erro ao executar query:", err);
+    throw err;
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Erro ao devolver a conexão ao pool:", err);
+      }
+    }
+  }
 }
 
 module.exports = {
