@@ -48,6 +48,28 @@ class ClienteRepository {
         return new Cliente(row.ID, row.NOME, row.EMAIL, row.PERFIL_ID);
     }
 
+    async update(id, clienteData) {
+        const sql = `UPDATE investimento_cliente
+                     SET nome = :nome, email = :email
+                     WHERE id = :id`;
+        
+        const binds = {
+            nome: clienteData.nome,
+            email: clienteData.email,
+            id: parseInt(id, 10)
+        };
+
+        await execute(sql, binds, { autoCommit: true });
+        
+        return new Cliente(parseInt(id, 10), clienteData.nome, clienteData.email);
+    }
+
+    async delete(id) {
+        const sql = `DELETE FROM investimento_cliente WHERE id = :id`;
+        const result = await execute(sql, [parseInt(id, 10)], { autoCommit: true });
+        return result.rowsAffected;
+    }
+
     async updatePerfil(clienteId, perfilId) {
         const sql = `UPDATE investimento_cliente SET perfil_id = :perfilId WHERE id = :clienteId`;
         await execute(sql, [perfilId, clienteId], { autoCommit: true });

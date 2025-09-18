@@ -1,19 +1,21 @@
 // src/api/investimentos.routes.js
 const express = require('express');
 const router = express.Router();
+const produtoController = require('../controllers/produtoInvestimento.controller');
 
-// Vamos precisar de um controller para isso. Por simplicidade,
-// podemos criar um método rápido no repository por enquanto.
-const produtoInvestimentoRepository = require('../repositories/produtoInvestimento.repository');
+// Rota para criar um novo produto de investimento
+router.post('/', produtoController.create);
 
-// Rota para listar todos os produtos de investimento disponíveis
-router.get('/', async (req, res, next) => {
-    try {
-        const produtos = await produtoInvestimentoRepository.findAll();
-        res.status(200).json(produtos);
-    } catch (error) {
-        next(error); // Passa o erro para o errorHandler
-    }
-});
+// Rota para listar todos os produtos
+router.get('/', produtoController.findAll);
+
+// Rota para buscar um produto por ID
+router.get('/:id', produtoController.findById);
+
+// Rota para atualizar um produto
+router.put('/:id', produtoController.update);
+
+// Rota para deletar um produto
+router.delete('/:id', produtoController.delete);
 
 module.exports = router;
