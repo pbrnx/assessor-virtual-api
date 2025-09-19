@@ -2,13 +2,25 @@
 require('dotenv').config();
 const oracledb = require('oracledb');
 
-// Melhora o formato do resultado das queries
+// Resultados em formato objeto
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
+// Validação das variáveis de ambiente
+['DB_USER', 'DB_PASSWORD', 'DB_URL'].forEach(v => {
+  if (!process.env[v]) {
+    console.error(`Variável de ambiente ${v} não definida`);
+    process.exit(1);
+  }
+});
+
+// Configuração do pool
 const dbConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    connectString: process.env.DB_URL
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  connectString: process.env.DB_URL,
+  poolMin: 2,
+  poolMax: 4,
+  poolIncrement: 1
 };
 
 let pool;
@@ -28,7 +40,7 @@ async function shutdown() {
   console.log("Fechando pool de conexões...");
   try {
     if (pool) {
-      await pool.close(10);
+      await pool.close(10); // espera até 10s para conexões fecharem
       console.log("Pool de conexões fechado.");
     }
   } catch (err) {
@@ -36,11 +48,11 @@ async function shutdown() {
   }
 }
 
-async function execute(sql, binds = [], options = { autoCommit: false }) {
+async function execute(sql, binds = [], options = {}) {
   let connection;
   try {
     connection = await pool.getConnection();
-    const result = await connection.execute(sql, binds, options);
+    const result = await connection.execute(sql, binds, { autoCommit: true, ...options });
     return result;
   } catch (err) {
     console.error("Erro ao executar query:", err);
@@ -57,7 +69,7 @@ async function execute(sql, binds = [], options = { autoCommit: false }) {
 }
 
 module.exports = {
-    startup,
-    shutdown,
-    execute
+  startup,
+  shutdown,
+  execute
 };

@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: API do Assessor de Investimentos Virtual
-  description: API REST para cadastro de clientes, definição de perfil de investidor e recomendação de carteiras de investimento.
+  description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
   version: 1.0.0
 servers:
   - url: http://localhost:3000/api
@@ -9,12 +9,12 @@ servers:
 
 tags:
   - name: Clientes
-    description: Operações relacionadas ao ciclo de vida dos clientes e suas recomendações.
+    description: Operações de clientes, perfil, saldo e carteira.
   - name: Produtos de Investimento
-    description: Gerenciamento do catálogo de produtos de investimento disponíveis.
+    description: Gerenciamento do catálogo de produtos de investimento.
 
 paths:
-  # Rotas de Clientes
+  # --- Rotas de Clientes (CRUD) ---
   /clientes:
     post:
       tags: [Clientes]
@@ -104,17 +104,14 @@ paths:
           description: Cliente deletado com sucesso.
         '404':
           description: Cliente não encontrado.
-
+  
+  # --- Rotas de Perfil e Recomendação ---
   /clientes/{id}/perfil:
     post:
       tags: [Clientes]
       summary: Define o perfil de investidor de um cliente
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/ClienteId'
       requestBody:
         required: true
         content:
@@ -134,13 +131,9 @@ paths:
   /clientes/{id}/recomendacoes:
     get:
       tags: [Clientes]
-      summary: Obtém a carteira de investimentos recomendada para um cliente
+      summary: Obtém a carteira de investimentos recomendada (sugestão)
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/ClienteId'
       responses:
         '200':
           description: Recomendação gerada com sucesso.
@@ -151,8 +144,128 @@ paths:
         '404':
           description: Cliente ou perfil não encontrado.
 
-  # Rotas de Produtos de Investimento
+  /clientes/{id}/recomendacoes/investir:
+    post:
+      tags: [Clientes]
+      summary: Investe o saldo disponível na carteira recomendada
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Investimento realizado com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Saldo insuficiente ou erro ao processar.
+
+  # --- Novas Rotas de Saldo e Carteira ---
+  /clientes/{id}/depositar:
+    post:
+      tags: [Clientes]
+      summary: Deposita um valor na conta do cliente
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositoRequest'
+      responses:
+        '200':
+          description: Depósito realizado com sucesso. Retorna o cliente com saldo atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '400':
+          description: Valor de depósito inválido.
+        '404':
+          description: Cliente não encontrado.
+
+  /clientes/{id}/carteira:
+    get:
+      tags: [Clientes]
+      summary: Busca a carteira de ativos de um cliente
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Carteira retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '404':
+          description: Cliente não encontrado.
+
+  /clientes/{id}/carteira/comprar:
+    post:
+      tags: [Clientes]
+      summary: Compra um ativo para a carteira do cliente
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraRequest'
+      responses:
+        '200':
+          description: Compra realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Dados da compra inválidos.
+        '402':
+          description: Saldo insuficiente.
+        '404':
+          description: Cliente ou produto não encontrado.
+
+  /clientes/{id}/carteira/vender:
+    post:
+      tags: [Clientes]
+      summary: Vende um ativo da carteira do cliente
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendaRequest'
+      responses:
+        '200':
+          description: Venda realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Quantidade de venda inválida ou insuficiente.
+        '404':
+          description: Cliente ou ativo na carteira não encontrado.
+
+
+  # --- Rotas de Produtos de Investimento ---
   /investimentos:
+    get:
+      tags: [Produtos de Investimento]
+      summary: Lista todos os produtos de investimento
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProdutoInvestimento'
     post:
       tags: [Produtos de Investimento]
       summary: Cria um novo produto de investimento
@@ -164,37 +277,21 @@ paths:
               $ref: '#/components/schemas/ProdutoInvestimentoRequest'
       responses:
         '201':
-          description: Produto criado com sucesso.
+          description: Produto criado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProdutoInvestimento'
-    get:
-      tags: [Produtos de Investimento]
-      summary: Lista todos os produtos de investimento
-      responses:
-        '200':
-          description: Lista de produtos retornada com sucesso.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProdutoInvestimento'
 
   /investimentos/{id}:
     get:
       tags: [Produtos de Investimento]
-      summary: Busca um produto de investimento pelo ID
+      summary: Busca um produto pelo ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/ProdutoId'
       responses:
         '200':
-          description: Produto encontrado.
+          description: Sucesso.
           content:
             application/json:
               schema:
@@ -203,13 +300,9 @@ paths:
           description: Produto não encontrado.
     put:
       tags: [Produtos de Investimento]
-      summary: Atualiza um produto de investimento
+      summary: Atualiza um produto
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/ProdutoId'
       requestBody:
         required: true
         content:
@@ -218,7 +311,7 @@ paths:
               $ref: '#/components/schemas/ProdutoInvestimentoRequest'
       responses:
         '200':
-          description: Produto atualizado com sucesso.
+          description: Produto atualizado.
           content:
             application/json:
               schema:
@@ -227,133 +320,130 @@ paths:
           description: Produto não encontrado.
     delete:
       tags: [Produtos de Investimento]
-      summary: Deleta um produto de investimento
+      summary: Deleta um produto
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: '#/components/parameters/ProdutoId'
       responses:
         '204':
-          description: Produto deletado com sucesso.
+          description: Produto deletado.
         '404':
           description: Produto não encontrado.
 
+
 components:
+  parameters:
+    ClienteId:
+      name: id
+      in: path
+      required: true
+      description: ID do cliente
+      schema:
+        type: integer
+    ProdutoId:
+      name: id
+      in: path
+      required: true
+      description: ID do produto de investimento
+      schema:
+        type: integer
+
   schemas:
+    # --- SCHEMAS DE CLIENTE E PERFIL ---
     ClienteRequest:
       type: object
       properties:
-        nome:
-          type: string
-          example: "Maria da Silva"
-        email:
-          type: string
-          example: "maria.silva@email.com"
+        nome: { type: string, example: "Maria da Silva" }
+        email: { type: string, example: "maria.silva@email.com" }
       required: [nome, email]
     ClienteResponse:
       type: object
       properties:
-        id:
-          type: integer
-          example: 1
-        nome:
-          type: string
-          example: "Maria da Silva"
-        email:
-          type: string
-          example: "maria.silva@email.com"
-        perfilId:
-          type: integer
-          nullable: true
-          example: 2
+        id: { type: integer, example: 1 }
+        nome: { type: string, example: "Maria da Silva" }
+        email: { type: string, example: "maria.silva@email.com" }
+        saldo: { type: number, format: float, example: 5000.75 }
+        perfilId: { type: integer, nullable: true, example: 2 }
     PerfilRequest:
       type: object
       properties:
         respostas:
           type: object
-          description: As respostas para as perguntas do questionário.
           properties:
-            toleranciaRisco:
-              type: string
-              enum: [A, B, C]
-              example: "B"
-            objetivo:
-              type: string
-              enum: [A, B, C]
-              example: "C"
-            conhecimento:
-              type: string
-              enum: [A, B, C]
-              example: "A"
+            toleranciaRisco: { type: string, enum: [A, B, C], example: "B" }
+            objetivo: { type: string, enum: [A, B, C], example: "C" }
+            conhecimento: { type: string, enum: [A, B, C], example: "A" }
     PerfilResponse:
       type: object
       properties:
-        id:
-          type: integer
-          example: 2
-        nome:
-          type: string
-          example: "Moderado"
-        descricao:
-          type: string
-          example: "Busca um equilíbrio entre segurança e rentabilidade."
+        id: { type: integer, example: 2 }
+        nome: { type: string, example: "Moderado" }
+        descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+    
+    # --- SCHEMAS DE PRODUTOS E RECOMENDAÇÃO ---
     ProdutoInvestimento:
       type: object
       properties:
-        id:
-          type: integer
-          example: 3
-        nome:
-          type: string
-          example: "Fundo Imobiliário HGLG11"
-        tipo:
-          type: string
-          example: "FII"
-        risco:
-          type: string
-          enum: [Baixo, Médio, Alto]
-          example: "Médio"
+        id: { type: integer, example: 3 }
+        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+        tipo: { type: string, example: "FII" }
+        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+        preco: { type: number, format: float, example: 162.30 }
     ProdutoInvestimentoRequest:
       type: object
       properties:
-        nome:
-          type: string
-          example: "Tesouro IPCA+ 2045"
-        tipo:
-          type: string
-          example: "Renda Fixa"
-        risco:
-          type: string
-          enum: [Baixo, Médio, Alto]
-          example: "Médio"
-      required: [nome, tipo, risco]
-    ProdutoRecomendado:
-      type: object
-      properties:
-        nome:
-          type: string
-          example: "Tesouro Selic"
-        tipo:
-          type: string
-          example: "Renda Fixa"
-        risco:
-          type: string
-          example: "Baixo"
-        percentualAlocacao:
-          type: integer
-          example: 40
+        nome: { type: string, example: "Tesouro IPCA+ 2045" }
+        tipo: { type: string, example: "Renda Fixa" }
+        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+        preco: { type: number, format: float, example: 105.50 }
+      required: [nome, tipo, risco, preco]
     RecomendacaoResponse:
       type: object
       properties:
-        perfilInvestidor:
-          type: string
-          example: "Moderado"
-        descricaoPerfil:
-          type: string
-          example: "Busca um equilíbrio entre segurança e rentabilidade."
+        perfilInvestidor: { type: string, example: "Moderado" }
+        descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
         carteiraRecomendada:
           type: array
           items:
-            $ref: '#/components/schemas/ProdutoRecomendado'
+            type: object
+            properties:
+              nome: { type: string, example: "Tesouro Selic" }
+              tipo: { type: string, example: "Renda Fixa" }
+              risco: { type: string, example: "Baixo" }
+              percentualAlocacao: { type: integer, example: 40 }
+    
+    # --- NOVOS SCHEMAS DE CARTEIRA E TRANSAÇÕES ---
+    DepositoRequest:
+      type: object
+      properties:
+        valor: { type: number, format: float, example: 1500.50 }
+      required: [valor]
+    CompraRequest:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        quantidade: { type: number, format: float, example: 10.5 }
+      required: [produtoId, quantidade]
+    VendaRequest:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        quantidade: { type: number, format: float, example: 5 }
+      required: [produtoId, quantidade]
+    CarteiraItemResponse:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+        tipo: { type: string, example: "FII" }
+        risco: { type: string, example: "Médio" }
+        precoUnitario: { type: number, format: float, example: 162.30 }
+        quantidade: { type: number, format: float, example: 25.5 }
+        valorTotal: { type: number, format: float, example: 4138.65 }
+    CarteiraResponse:
+      type: object
+      properties:
+        ativos:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarteiraItemResponse'
+        valorTotalInvestido: { type: number, format: float, example: 15280.40 }
