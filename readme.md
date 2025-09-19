@@ -6,6 +6,8 @@ A aplicação tem um deploy no render, para uso sem necessidade de configuraçã
 
 Mas, mais abaixo, há também uma explicação de como configurar o ambiente para execução em servidor de desenvolvimento.
 
+A documentação dos endpoints pode ser encontrada aqui: https://assessor-virtual-api.onrender.com/api-docs
+
 ## ❯ Descrição
 
 O **Assessor de Investimentos Virtual** é uma aplicação Full Stack que simula uma plataforma de investimentos completa. O projeto consiste em uma API RESTful construída com Node.js e Express, conectada a um banco de dados Oracle, e um frontend dinâmico (SPA - Single Page Application) desenvolvido com Vanilla JavaScript, HTML e CSS.
