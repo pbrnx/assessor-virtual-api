@@ -1,6 +1,5 @@
 # Assessor de Investimentos Virtual
-
-![Dashboard da Aplicação](https://i.imgur.com/your-dashboard-image.png) ---
+<img width="1899" height="948" alt="image" src="https://github.com/user-attachments/assets/daec51b8-f559-4798-bc7b-e57053d4091f" />
 
 ## ❯ Descrição
 
@@ -192,6 +191,8 @@ Após iniciar o servidor, a aplicação estará disponível nos seguintes endere
 
 -   **Documentação da API (Swagger)**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
     > Acesse este link para ver todos os endpoints da API, seus parâmetros, e para testá-los diretamente pelo navegador.
+    <img width="1902" height="950" alt="image" src="https://github.com/user-attachments/assets/9d2e8bb8-2503-47bb-839b-62bfef487032" />
+
 
 ---
 
