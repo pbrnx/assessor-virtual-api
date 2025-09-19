@@ -6,12 +6,14 @@ class ProdutoInvestimento {
      * @param {string} nome - O nome do produto (ex: 'Tesouro Selic', 'Fundo de Ações XPTO').
      * @param {string} tipo - A categoria do produto (ex: 'Renda Fixa', 'Ações', 'Fundo Imobiliário').
      * @param {string} risco - O nível de risco associado ao produto (ex: 'Baixo', 'Médio', 'Alto').
+     * @param {number} preco - O preço unitário atual do produto.
      */
-    constructor(id, nome, tipo, risco) {
+    constructor(id, nome, tipo, risco, preco) {
         this.id = id;
         this.nome = nome;
         this.tipo = tipo;
         this.risco = risco;
+        this.preco = preco;
     }
 }
 

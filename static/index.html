@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Assessor de Investimentos Virtual</title>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
-    
-    <script src="app.js" defer></script>
 </head>
 <body>
-
     <header class="site-header">
         <div class="header-container">
             <a class="site-logo" href="#"><strong>Assessor Virtual</strong></a>
@@ -23,79 +20,72 @@
 
     <main class="site-main">
         <div class="main-container">
-
             <section id="login-view" class="auth-view">
                 <div class="auth-card">
                     <div class="auth-header"><h1>Acesse sua Conta</h1></div>
                     <form id="login-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="login-email">Email</label>
-                            <input type="email" id="login-email" class="form-input" required>
-                        </div>
+                        <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" class="form-input" required placeholder="seu@email.com"></div>
                         <button type="submit" class="form-button">Entrar</button>
                         <p class="auth-footer">Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
                     </form>
                 </div>
             </section>
-
             <section id="register-view" class="auth-view hidden">
                  <div class="auth-card">
                     <div class="auth-header"><h1>Crie sua Conta</h1></div>
                     <form id="register-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="register-nome">Nome Completo</label>
-                            <input type="text" id="register-nome" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="register-email">Email</label>
-                            <input type="email" id="register-email" class="form-input" required>
-                        </div>
+                        <div class="form-group"><label for="register-nome">Nome Completo</label><input type="text" id="register-nome" class="form-input" required></div>
+                        <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" class="form-input" required></div>
                         <button type="submit" class="form-button">Cadastrar</button>
                         <p class="auth-footer">Já tem uma conta? <a href="#" id="show-login-link">Faça login</a></p>
                     </form>
                 </div>
             </section>
-
             <section id="questionario-view" class="app-view hidden">
-                <div class="page-header">
-                    <h1>Perfil de Investidor</h1>
-                    <p>Responda às perguntas abaixo para descobrirmos seu perfil.</p>
-                </div>
+                <div class="page-header"><h1>Perfil de Investidor</h1><p>Responda às perguntas abaixo para descobrirmos seu perfil e montarmos a melhor carteira para você.</p></div>
                 <form id="questionario-form" class="questionario">
-                    <div class="question">
-                        <h3>1. Qual sua tolerância a perdas financeiras?</h3>
-                        <label><input type="radio" name="toleranciaRisco" value="A" required> A) Baixa. Prefiro segurança a alta rentabilidade.</label>
-                        <label><input type="radio" name="toleranciaRisco" value="B"> B) Média. Aceito alguma volatilidade por melhores retornos.</label>
-                        <label><input type="radio" name="toleranciaRisco" value="C"> C) Alta. Estou disposto a correr riscos por retornos elevados.</label>
-                    </div>
-                    <div class="question">
-                        <h3>2. Qual seu principal objetivo com este investimento?</h3>
-                        <label><input type="radio" name="objetivo" value="A" required> A) Preservar meu patrimônio com segurança.</label>
-                        <label><input type="radio" name="objetivo" value="B"> B) Aumentar meu patrimônio gradualmente.</label>
-                        <label><input type="radio" name="objetivo" value="C"> C) Maximizar o crescimento do meu patrimônio.</label>
-                    </div>
-                    <div class="question">
-                        <h3>3. Qual seu nível de conhecimento do mercado financeiro?</h3>
-                        <label><input type="radio" name="conhecimento" value="A" required> A) Iniciante. Conheço pouco sobre os produtos.</label>
-                        <label><input type="radio" name="conhecimento" value="B"> B) Intermediário. Entendo os conceitos básicos.</label>
-                        <label><input type="radio" name="conhecimento" value="C"> C) Avançado. Acompanho o mercado e conheço produtos complexos.</label>
-                    </div>
-                    <button type="submit" class="form-button">Ver Perfil e Recomendação</button>
+                    <div class="question"><h3>1. Qual sua tolerância a perdas financeiras?</h3><label><input type="radio" name="toleranciaRisco" value="A" required> A) Baixa. Prefiro segurança a alta rentabilidade.</label><label><input type="radio" name="toleranciaRisco" value="B"> B) Média. Aceito alguma volatilidade por melhores retornos.</label><label><input type="radio" name="toleranciaRisco" value="C"> C) Alta. Estou disposto a correr riscos por retornos elevados.</label></div>
+                    <div class="question"><h3>2. Qual seu principal objetivo com este investimento?</h3><label><input type="radio" name="objetivo" value="A" required> A) Preservar meu patrimônio com segurança.</label><label><input type="radio" name="objetivo" value="B"> B) Aumentar meu patrimônio gradualmente.</label><label><input type="radio" name="objetivo" value="C"> C) Maximizar o crescimento do meu patrimônio.</label></div>
+                    <div class="question"><h3>3. Qual seu nível de conhecimento do mercado financeiro?</h3><label><input type="radio" name="conhecimento" value="A" required> A) Iniciante. Conheço pouco sobre os produtos.</label><label><input type="radio" name="conhecimento" value="B"> B) Intermediário. Entendo os conceitos básicos.</label><label><input type="radio" name="conhecimento" value="C"> C) Avançado. Acompanho o mercado e conheço produtos complexos.</label></div>
+                    <button type="submit" class="form-button">Ver Minha Carteira Ideal</button>
                 </form>
             </section>
 
-            <section id="recomendacao-view" class="app-view hidden">
-                <div class="page-header">
-                    <h1 id="recomendacao-titulo">Sua Carteira Recomendada</h1>
-                </div>
-                <div id="recomendacao-resultado" class="recomendacao-card">
+            <section id="dashboard-view" class="app-view hidden">
+                <div id="dashboard-header" class="dashboard-header"></div>
+                <div class="dashboard-grid">
+                    <div class="main-content">
+                        <div class="dashboard-section">
+                            <div class="section-header">
+                                <h2>Sua Carteira Recomendada</h2>
+                                <button id="investir-recomendacao-btn" class="form-button">Investir com 1 Clique</button>
+                            </div>
+                            <div id="recomendacao-container" class="recomendacao-container"></div>
+                        </div>
+                        <div class="dashboard-section">
+                            <div class="marketplace-header"><div id="marketplace-filters" class="filters"><span>Filtrar:</span><button class="filter-btn active" data-risk="todos">Todos</button><button class="filter-btn" data-risk="Baixo">Baixo</button><button class="filter-btn" data-risk="Médio">Médio</button><button class="filter-btn" data-risk="Alto">Alto</button></div></div>
+                            <div id="marketplace-grid" class="marketplace-grid"></div>
+                        </div>
                     </div>
+                    <aside class="sidebar">
+                        <div class="dashboard-section">
+                            <h2>Minha Carteira</h2>
+                            <div class="chart-container">
+                                <canvas id="carteira-chart"></canvas>
+                            </div>
+                            <div id="carteira-container" class="carteira-container"></div>
+                        </div>
+                    </aside>
+                </div>
             </section>
-            
             <div id="alert-container" class="alert hidden"></div>
-
         </div>
     </main>
 
+    <div id="buy-modal" class="modal-overlay hidden"><div class="modal-content"><button id="buy-modal-close-btn" class="modal-close">&times;</button><div id="buy-modal-body"></div></div></div>
+    <div id="deposit-modal" class="modal-overlay hidden"><div class="modal-content"><button id="deposit-modal-close-btn" class="modal-close">&times;</button><h3>Realizar Depósito</h3><form id="deposit-form"><div class="form-group"><label for="deposit-amount">Valor (R$)</label><input type="number" id="deposit-amount" class="form-input" min="1" step="0.01" placeholder="Ex: 500,00" required></div><button type="submit" class="form-button">Confirmar</button></form></div></div>
+    <div id="sell-modal" class="modal-overlay hidden"><div class="modal-content"><button id="sell-modal-close-btn" class="modal-close">&times;</button><div id="sell-modal-body"></div></div></div>
+    
+    <script src="app.js" defer></script>
 </body>
 </html>

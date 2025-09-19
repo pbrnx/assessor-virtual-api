@@ -25,10 +25,8 @@ class ClienteService {
     }
 
     async updateCliente(id, clienteData) {
-        // Regra de negócio: garantir que o cliente exista antes de atualizar
         await this.getClienteById(id);
         
-        // Regra de negócio: garantir que o novo e-mail não pertença a outro cliente
         const emailExistente = await clienteRepository.findByEmail(clienteData.email);
         if (emailExistente && emailExistente.id !== parseInt(id, 10)) {
             throw new Error('O e-mail informado já está em uso por outro cliente.');
@@ -38,9 +36,27 @@ class ClienteService {
     }
 
     async deleteCliente(id) {
-        // Regra de negócio: garantir que o cliente exista antes de deletar
         await this.getClienteById(id);
         return await clienteRepository.delete(id);
+    }
+
+    /**
+     * NOVO: Adiciona um valor ao saldo do cliente.
+     * @param {number} id - ID do cliente.
+     * @param {number} valor - Valor a ser depositado.
+     */
+    async depositarSaldo(id, valor) {
+        if (!valor || typeof valor !== 'number' || valor <= 0) {
+            throw new Error('O valor do depósito deve ser um número positivo.');
+        }
+
+        const cliente = await this.getClienteById(id); // Garante que o cliente existe
+        const novoSaldo = cliente.saldo + valor;
+
+        await clienteRepository.updateSaldo(id, novoSaldo);
+
+        // Retorna o cliente com o saldo atualizado
+        return await this.getClienteById(id);
     }
 }
 

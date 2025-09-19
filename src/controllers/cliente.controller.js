@@ -1,6 +1,6 @@
 // src/controllers/cliente.controller.js
 const clienteService = require('../services/cliente.service');
-const { ClienteRequestDTO, ClienteResponseDTO } = require('../dtos/cliente.dto');
+const { ClienteRequestDTO, ClienteResponseDTO, DepositoRequestDTO } = require('../dtos/cliente.dto');
 
 class ClienteController {
 
@@ -17,7 +17,7 @@ class ClienteController {
 
             return res.status(201).json(clienteResponse);
         } catch (error) {
-            next(error); // Passa o erro para o errorHandler
+            next(error);
         }
     }
 
@@ -65,9 +65,25 @@ class ClienteController {
         try {
             const id = req.params.id;
             await clienteService.deleteCliente(id);
-            return res.status(204).send(); // 204 No Content para sucesso sem corpo de resposta
+            return res.status(204).send();
         } catch (error) {
             error.statusCode = 404;
+            next(error);
+        }
+    }
+
+    // NOVO: Controller para depósito
+    async depositar(req, res, next) {
+        try {
+            const id = req.params.id;
+            const depositoRequest = new DepositoRequestDTO(req.body);
+            
+            const clienteAtualizado = await clienteService.depositarSaldo(id, depositoRequest.valor);
+            const clienteResponse = new ClienteResponseDTO(clienteAtualizado);
+
+            return res.status(200).json(clienteResponse);
+        } catch (error) {
+            error.statusCode = error.message.includes('encontrado') ? 404 : 400;
             next(error);
         }
     }

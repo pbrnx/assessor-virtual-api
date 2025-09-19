@@ -5,6 +5,7 @@ const ProdutoInvestimentoDTO = require('../dtos/produtoInvestimento.dto');
 class ProdutoInvestimentoController {
     async create(req, res, next) {
         try {
+            // O DTO agora inclui e valida o preço
             const produtoDTO = new ProdutoInvestimentoDTO(req.body);
             const novoProduto = await produtoService.createProduto(produtoDTO);
             res.status(201).json(novoProduto);

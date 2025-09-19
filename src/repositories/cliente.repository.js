@@ -8,44 +8,46 @@ class ClienteRepository {
     async create(clienteData) {
         const sql = `INSERT INTO investimento_cliente (nome, email) 
                      VALUES (:nome, :email) 
-                     RETURNING id INTO :id`;
+                     RETURNING id, saldo INTO :id, :saldo`;
         
         const binds = {
             nome: clienteData.nome,
             email: clienteData.email,
-            id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+            id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+            saldo: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
         };
 
         const result = await execute(sql, binds, { autoCommit: true });
         const id = result.outBinds.id[0];
+        const saldo = result.outBinds.saldo[0];
         
-        return new Cliente(id, clienteData.nome, clienteData.email);
+        return new Cliente(id, clienteData.nome, clienteData.email, saldo);
     }
 
     async findById(id) {
-        const sql = `SELECT id, nome, email, perfil_id FROM investimento_cliente WHERE id = :id`;
+        const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente WHERE id = :id`;
         const result = await execute(sql, [parseInt(id, 10)]);
         
         if (result.rows.length === 0) return null;
 
         const row = result.rows[0];
-        return new Cliente(row.ID, row.NOME, row.EMAIL, row.PERFIL_ID);
+        return new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID);
     }
 
     async findAll() {
-        const sql = `SELECT id, nome, email, perfil_id FROM investimento_cliente`;
+        const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente`;
         const result = await execute(sql);
-        return result.rows.map(row => new Cliente(row.ID, row.NOME, row.EMAIL, row.PERFIL_ID));
+        return result.rows.map(row => new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID));
     }
 
     async findByEmail(email) {
-        const sql = `SELECT id, nome, email, perfil_id FROM investimento_cliente WHERE email = :email`;
+        const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente WHERE email = :email`;
         const result = await execute(sql, [email]);
         
         if (result.rows.length === 0) return null;
         
         const row = result.rows[0];
-        return new Cliente(row.ID, row.NOME, row.EMAIL, row.PERFIL_ID);
+        return new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID);
     }
 
     async update(id, clienteData) {
@@ -60,8 +62,7 @@ class ClienteRepository {
         };
 
         await execute(sql, binds, { autoCommit: true });
-        
-        return new Cliente(parseInt(id, 10), clienteData.nome, clienteData.email);
+        return await this.findById(id); // Retorna o cliente atualizado com o saldo
     }
 
     async delete(id) {
@@ -73,6 +74,12 @@ class ClienteRepository {
     async updatePerfil(clienteId, perfilId) {
         const sql = `UPDATE investimento_cliente SET perfil_id = :perfilId WHERE id = :clienteId`;
         await execute(sql, [perfilId, clienteId], { autoCommit: true });
+    }
+
+    // NOVO: Método para atualizar o saldo
+    async updateSaldo(clienteId, novoSaldo) {
+        const sql = `UPDATE investimento_cliente SET saldo = :novoSaldo WHERE id = :clienteId`;
+        await execute(sql, [novoSaldo, clienteId], { autoCommit: true });
     }
 }
 

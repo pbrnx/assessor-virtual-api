@@ -4,9 +4,12 @@ const produtoRepository = require('../repositories/produtoInvestimento.repositor
 class ProdutoInvestimentoService {
 
     async createProduto(produtoData) {
-        const { nome, tipo, risco } = produtoData;
-        if (!nome || !tipo || !risco) {
-            throw new Error('Nome, tipo e risco são obrigatórios.');
+        const { nome, tipo, risco, preco } = produtoData;
+        if (!nome || !tipo || !risco || preco === undefined) {
+            throw new Error('Nome, tipo, risco e preço são obrigatórios.');
+        }
+        if (typeof preco !== 'number' || preco < 0) {
+            throw new Error('O preço deve ser um número não negativo.');
         }
         return await produtoRepository.create(produtoData);
     }

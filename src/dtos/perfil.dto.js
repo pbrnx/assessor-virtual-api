@@ -2,12 +2,11 @@
 
 /**
  * DTO para receber as respostas do questionário de perfil de investidor.
- * Exemplo: o questionário pode ter 3 perguntas.
  */
 class PerfilRequestDTO {
     constructor(respostas) {
-        // 'respostas' seria um objeto ou array com as respostas do cliente
-        // Ex: { pergunta1: 'A', pergunta2: 'C', pergunta3: 'B' }
+        // 'respostas' seria um objeto com as respostas do cliente
+        // Ex: { toleranciaRisco: 'A', objetivo: 'C', conhecimento: 'B' }
         this.respostas = respostas;
     }
 }

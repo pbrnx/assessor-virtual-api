@@ -20,11 +20,23 @@ class ClienteResponseDTO {
         this.id = clienteModel.id;
         this.nome = clienteModel.nome;
         this.email = clienteModel.email;
+        this.saldo = clienteModel.saldo; // Inclui o saldo na resposta
         this.perfilId = clienteModel.perfilId;
     }
 }
 
+/**
+ * DTO para a requisição de depósito.
+ */
+class DepositoRequestDTO {
+    constructor(body) {
+        this.valor = body.valor;
+    }
+}
+
+
 module.exports = {
     ClienteRequestDTO,
-    ClienteResponseDTO
+    ClienteResponseDTO,
+    DepositoRequestDTO
 };

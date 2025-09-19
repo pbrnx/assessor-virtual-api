@@ -27,6 +27,5 @@ class RecomendacaoResponseDTO {
 }
 
 module.exports = {
-    ProdutoRecomendadoDTO,
     RecomendacaoResponseDTO
 };
