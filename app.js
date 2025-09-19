@@ -25,9 +25,7 @@ database.startup().then(() => {
     app.use(express.static(path.join(__dirname, 'static')));
 
     // --- ROTA "CATCH-ALL" PARA A SPA ---
-    // QUALQUER outra requisição GET que não foi resolvida até aqui
-    // (não é API, não é um arquivo estático) deve servir o index.html
-    // Isso é essencial para o roteamento do frontend funcionar ao recarregar a página.
+
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'index.html'));
 });
