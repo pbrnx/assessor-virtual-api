@@ -1,6 +1,13 @@
 # Assessor de Investimentos Virtual
 <img width="1899" height="948" alt="image" src="https://github.com/user-attachments/assets/daec51b8-f559-4798-bc7b-e57053d4091f" />
 
+## Integrantes 
+- Nome: Pedro Augusto Carneiro Barone Bomfim - RM: 99781
+- Nome: João Pedro de Albuquerque Oliveira - RM: 551579
+- Nome: Matheus Augusto Santos Rego - RM:551466
+- Nome: Ian Cancian Nachtergaele - RM: 98387
+
+
 ## Como usar?
 A aplicação tem um deploy no render, para uso sem necessidade de configuração local: https://assessor-virtual-api.onrender.com
 

@@ -1,5 +1,8 @@
 // static/app.js
 
+// Loading button
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIÁVEIS DE ESTADO E CONSTANTES ---
     const API_BASE_URL = '/api';
