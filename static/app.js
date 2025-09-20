@@ -1,8 +1,5 @@
 // static/app.js
 
-// Loading button
-
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIÁVEIS DE ESTADO E CONSTANTES ---
     const API_BASE_URL = '/api';
@@ -45,6 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertContainer = document.getElementById('alert-container');
     const investirRecomendacaoBtn = document.getElementById('investir-recomendacao-btn');
     const carteiraChartCanvas = document.getElementById('carteira-chart').getContext('2d');
+    
+    // NOVO: Seletor para o overlay de loading
+    const loadingOverlay = document.getElementById('loading-overlay');
 
     const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
         alertContainer.classList.remove('hidden');
         setTimeout(() => alertContainer.classList.add('hidden'), 5000);
     };
+
+    // NOVO: Funções para controlar o loader
+    const showLoader = () => loadingOverlay.classList.remove('hidden');
+    const hideLoader = () => loadingOverlay.classList.add('hidden');
 
     const setUserSession = (user) => {
         currentUser = user;
@@ -160,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         buyModalBody.innerHTML = `<h3>Comprar ${product.nome}</h3><div class="product-info"><p><strong>Preço:</strong> ${formatCurrency(product.preco)}</p></div><p class="info-saldo">Seu saldo: ${formatCurrency(currentUser.saldo)}</p><form id="buy-form"><div class="form-group"><label for="buy-quantity">Quantidade</label><input type="number" id="buy-quantity" class="form-input" min="0.0001" step="any" required></div><p>Custo total: <span class="valor-total" id="valor-total-compra">${formatCurrency(0)}</span></p><button type="submit" class="form-button">Confirmar Compra</button></form>`;
         const quantityInput = document.getElementById('buy-quantity'), totalSpan = document.getElementById('valor-total-compra');
         quantityInput.addEventListener('input', () => totalSpan.textContent = formatCurrency((parseFloat(quantityInput.value) || 0) * product.preco));
-        document.getElementById('buy-form').addEventListener('submit', (e) => { e.preventDefault(); handleCompra(product.id, parseFloat(quantityInput.value)); });
+        document.getElementById('buy-form').addEventListener('submit', (e) => { e.preventDefault(); handleCompra(product.id, parseFloat(quantityInput.value), e.submitter); });
         buyModal.classList.remove('hidden');
     };
     
@@ -170,16 +174,25 @@ document.addEventListener('DOMContentLoaded', () => {
         sellModalBody.innerHTML = `<h3>Vender ${ativo.nome}</h3><div class="product-info"><p><strong>Preço Atual:</strong> ${formatCurrency(ativo.precoUnitario)}</p></div><p class="info-saldo">Você possui: ${ativo.quantidade.toFixed(4)} cotas</p><form id="sell-form"><div class="form-group"><label for="sell-quantity">Quantidade</label><input type="number" id="sell-quantity" class="form-input" max="${ativo.quantidade}" min="0.0001" step="any" required></div><p>Valor da venda: <span class="valor-total" id="valor-total-venda">${formatCurrency(0)}</span></p><button type="submit" class="form-button danger">Confirmar Venda</button></form>`;
         const quantityInput = document.getElementById('sell-quantity'), totalSpan = document.getElementById('valor-total-venda');
         quantityInput.addEventListener('input', () => totalSpan.textContent = formatCurrency((parseFloat(quantityInput.value) || 0) * ativo.precoUnitario));
-        document.getElementById('sell-form').addEventListener('submit', (e) => { e.preventDefault(); handleVenda(ativo.produtoId, parseFloat(quantityInput.value)); });
+        document.getElementById('sell-form').addEventListener('submit', (e) => { e.preventDefault(); handleVenda(ativo.produtoId, parseFloat(quantityInput.value), e.submitter); });
         sellModal.classList.remove('hidden');
     };
 
     // --- FUNÇÕES DE API ---
-    const apiCall = async (endpoint, options = {}) => {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Ocorreu um erro na requisição.');
-        return data;
+    // ATUALIZADO: apiCall agora controla o loader e desabilita o botão
+    const apiCall = async (endpoint, options = {}, buttonElement = null) => {
+        showLoader();
+        if (buttonElement) buttonElement.disabled = true;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Ocorreu um erro na requisição.');
+            return data;
+        } finally {
+            hideLoader();
+            if (buttonElement) buttonElement.disabled = false;
+        }
     };
 
     const loadDashboard = async () => {
@@ -198,31 +211,32 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { showAlert(error.message); }
     };
 
-    const handleLogin = async (email) => {
+    const handleLogin = async (email, button) => {
         try {
-            const clientes = await apiCall('/clientes');
+            const clientes = await apiCall('/clientes', {}, button);
             const user = clientes.find(c => c.email.toLowerCase() === email.toLowerCase());
-            if (user) setUserSession(await apiCall(`/clientes/${user.id}`));
+            if (user) setUserSession(await apiCall(`/clientes/${user.id}`, {}, button));
             else showAlert('E-mail não encontrado. Por favor, cadastre-se.');
         } catch (error) { showAlert(error.message); }
     };
     
-    const handleRegister = async (nome, email) => {
-        try { setUserSession(await apiCall('/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, email }) }));
+    const handleRegister = async (nome, email, button) => {
+        try { 
+            setUserSession(await apiCall('/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, email }) }, button));
         } catch (error) { showAlert(error.message); }
     };
 
-    const handleQuestionario = async (respostas) => {
+    const handleQuestionario = async (respostas, button) => {
         try {
-            const perfil = await apiCall(`/clientes/${currentUser.id}/perfil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respostas }) });
+            const perfil = await apiCall(`/clientes/${currentUser.id}/perfil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respostas }) }, button);
             currentUser.perfilId = perfil.id;
             loadDashboard();
         } catch (error) { showAlert(error.message); }
     };
 
-    const handleDeposito = async (valor) => {
+    const handleDeposito = async (valor, button) => {
         try {
-            currentUser = await apiCall(`/clientes/${currentUser.id}/depositar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor }) });
+            currentUser = await apiCall(`/clientes/${currentUser.id}/depositar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor }) }, button);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Depósito realizado com sucesso!', 'success');
             depositModal.classList.add('hidden');
@@ -230,9 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { showAlert(error.message); }
     };
 
-    const handleCompra = async (produtoId, quantidade) => {
+    const handleCompra = async (produtoId, quantidade, button) => {
         try {
-            await apiCall(`/clientes/${currentUser.id}/carteira/comprar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) });
+            await apiCall(`/clientes/${currentUser.id}/carteira/comprar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) }, button);
             currentUser = await apiCall(`/clientes/${currentUser.id}`);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Compra realizada com sucesso!', 'success');
@@ -241,9 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { showAlert(error.message); }
     };
     
-    const handleVenda = async (produtoId, quantidade) => {
+    const handleVenda = async (produtoId, quantidade, button) => {
         try {
-            await apiCall(`/clientes/${currentUser.id}/carteira/vender`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) });
+            await apiCall(`/clientes/${currentUser.id}/carteira/vender`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) }, button);
             currentUser = await apiCall(`/clientes/${currentUser.id}`);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Venda realizada com sucesso!', 'success');
@@ -252,13 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { showAlert(error.message); }
     };
     
-    const handleInvestirRecomendacao = async () => {
+    const handleInvestirRecomendacao = async (button) => {
         if (currentUser.saldo <= 0) {
             showAlert('Você não tem saldo para investir. Faça um depósito primeiro.');
             return;
         }
         try {
-            await apiCall(`/clientes/${currentUser.id}/recomendacoes/investir`, { method: 'POST' });
+            await apiCall(`/clientes/${currentUser.id}/recomendacoes/investir`, { method: 'POST' }, button);
             currentUser = await apiCall(`/clientes/${currentUser.id}`);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Investimento na carteira recomendada realizado com sucesso!', 'success');
@@ -267,10 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- EVENT LISTENERS ---
-    forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value); });
-    forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value); });
-    forms.questionario.addEventListener('submit', (e) => { e.preventDefault(); handleQuestionario(Object.fromEntries(new FormData(e.target).entries())); });
-    forms.deposit.addEventListener('submit', (e) => { e.preventDefault(); handleDeposito(parseFloat(e.target.elements['deposit-amount'].value)); });
+    // ATUALIZADO: Passa e.submitter para as funções de handle
+    forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value, e.submitter); });
+    forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value, e.submitter); });
+    forms.questionario.addEventListener('submit', (e) => { e.preventDefault(); handleQuestionario(Object.fromEntries(new FormData(e.target).entries()), e.submitter); });
+    forms.deposit.addEventListener('submit', (e) => { e.preventDefault(); handleDeposito(parseFloat(e.target.elements['deposit-amount'].value), e.submitter); });
     logoutButton.addEventListener('click', clearUserSession);
     showRegisterLink.addEventListener('click', () => switchView('register'));
     showLoginLink.addEventListener('click', () => switchView('login'));
@@ -279,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     carteiraContainer.addEventListener('click', (e) => { const btn = e.target.closest('.sell-btn'); if (btn) openSellModal(btn.dataset.productId); });
     [buyModal, depositModal, sellModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); }); });
     [buyModalCloseBtn, depositModalCloseBtn, sellModalCloseBtn].forEach(btn => btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')));
-    investirRecomendacaoBtn.addEventListener('click', handleInvestirRecomendacao);
+    investirRecomendacaoBtn.addEventListener('click', (e) => handleInvestirRecomendacao(e.currentTarget));
 
     // --- INICIALIZAÇÃO ---
     const init = () => { if (sessionStorage.getItem('currentUser')) setUserSession(JSON.parse(sessionStorage.getItem('currentUser'))); else switchView('login'); };
