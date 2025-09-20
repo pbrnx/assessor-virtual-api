@@ -1,6 +1,6 @@
 // src/api/carteira.routes.js
 const express = require('express');
-// mergeParams é crucial para acessar o :id da rota pai (/clientes/:id)
+// mergeParams para acessar o :id da rota pai (/clientes/:id)
 const router = express.Router({ mergeParams: true }); 
 const carteiraController = require('../controllers/carteira.controller');
 

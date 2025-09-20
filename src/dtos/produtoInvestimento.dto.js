@@ -7,8 +7,8 @@ class ProdutoInvestimentoDTO {
     constructor(produto) {
         this.nome = produto.nome;
         this.tipo = produto.tipo;
-        this.risco = produto.risco; // Ex: 'Baixo', 'Médio', 'Alto'
-        this.preco = produto.preco; // Adiciona o preço
+        this.risco = produto.risco; 
+        this.preco = produto.preco; 
     }
 }
 

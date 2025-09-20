@@ -72,7 +72,7 @@ class ClienteController {
         }
     }
 
-    // NOVO: Controller para depósito
+
     async depositar(req, res, next) {
         try {
             const id = req.params.id;

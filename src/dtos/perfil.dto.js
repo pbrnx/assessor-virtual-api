@@ -5,8 +5,7 @@
  */
 class PerfilRequestDTO {
     constructor(respostas) {
-        // 'respostas' seria um objeto com as respostas do cliente
-        // Ex: { toleranciaRisco: 'A', objetivo: 'C', conhecimento: 'B' }
+       
         this.respostas = respostas;
     }
 }

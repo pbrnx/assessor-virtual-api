@@ -13,7 +13,7 @@ class PerfilInvestidor {
     }
 }
 
-// Poderíamos exportar os tipos de perfil como constantes para usar no resto do código
+
 PerfilInvestidor.TIPOS = {
     CONSERVADOR: 'Conservador',
     MODERADO: 'Moderado',

@@ -1,6 +1,6 @@
 // src/controllers/recomendacao.controller.js
 const recomendacaoService = require('../services/recomendacao.service');
-// CORREÇÃO: Importa cada DTO de seu respectivo arquivo, sem duplicatas.
+
 const { RecomendacaoResponseDTO } = require('../dtos/recomendacao.dto');
 const { CarteiraResponseDTO } = require('../dtos/carteira.dto');
 
