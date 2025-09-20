@@ -42,9 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertContainer = document.getElementById('alert-container');
     const investirRecomendacaoBtn = document.getElementById('investir-recomendacao-btn');
     const carteiraChartCanvas = document.getElementById('carteira-chart').getContext('2d');
-    
-    // NOVO: Seletor para o overlay de loading
     const loadingOverlay = document.getElementById('loading-overlay');
+    
+    // Seletores para o modal de confirmação
+    const confirmModal = document.getElementById('confirm-modal'),
+        confirmModalCloseBtn = document.getElementById('confirm-modal-close-btn'),
+        confirmModalMessage = document.getElementById('confirm-modal-message'),
+        confirmModalConfirmBtn = document.getElementById('confirm-modal-confirm-btn'),
+        confirmModalCancelBtn = document.getElementById('confirm-modal-cancel-btn');
 
     const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -62,9 +67,31 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => alertContainer.classList.add('hidden'), 5000);
     };
 
-    // NOVO: Funções para controlar o loader
     const showLoader = () => loadingOverlay.classList.remove('hidden');
     const hideLoader = () => loadingOverlay.classList.add('hidden');
+
+    // Função para abrir e gerenciar o modal de confirmação
+    const openConfirmModal = (message, onConfirm) => {
+        confirmModalMessage.textContent = message;
+        confirmModal.classList.remove('hidden');
+
+        // Para evitar múltiplos listeners, clonamos e substituímos os botões
+        const newConfirmBtn = confirmModalConfirmBtn.cloneNode(true);
+        confirmModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, confirmModalConfirmBtn);
+        
+        const newCancelBtn = confirmModalCancelBtn.cloneNode(true);
+        confirmModalCancelBtn.parentNode.replaceChild(newCancelBtn, confirmModalCancelBtn);
+
+        // Adicionamos os novos listeners
+        newConfirmBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            onConfirm();
+        });
+        
+        newCancelBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+        });
+    };
 
     const setUserSession = (user) => {
         currentUser = user;
@@ -98,7 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="carteira-item">
                     <div class="item-header">
                         <span>${ativo.nome}</span>
-                        <button class="sell-btn" data-product-id="${ativo.produtoId}">Vender</button>
+                        <div class="item-actions">
+                            <button class="sell-all-btn" data-product-id="${ativo.produtoId}" title="Vender todas as cotas">Vender Tudo</button>
+                            <button class="sell-btn" data-product-id="${ativo.produtoId}">Vender</button>
+                        </div>
                     </div>
                     <div class="item-body">
                         <div>${ativo.quantidade.toFixed(4)} cotas x ${formatCurrency(ativo.precoUnitario)}</div>
@@ -179,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- FUNÇÕES DE API ---
-    // ATUALIZADO: apiCall agora controla o loader e desabilita o botão
     const apiCall = async (endpoint, options = {}, buttonElement = null) => {
         showLoader();
         if (buttonElement) buttonElement.disabled = true;
@@ -281,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- EVENT LISTENERS ---
-    // ATUALIZADO: Passa e.submitter para as funções de handle
     forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value, e.submitter); });
     forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value, e.submitter); });
     forms.questionario.addEventListener('submit', (e) => { e.preventDefault(); handleQuestionario(Object.fromEntries(new FormData(e.target).entries()), e.submitter); });
@@ -291,9 +319,37 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoginLink.addEventListener('click', () => switchView('login'));
     marketplaceFilters.addEventListener('click', (e) => { if (e.target.matches('.filter-btn')) { document.querySelector('.filter-btn.active').classList.remove('active'); e.target.classList.add('active'); renderMarketplace(e.target.dataset.risk); } });
     marketplaceGrid.addEventListener('click', (e) => { const card = e.target.closest('.product-card'); if (card) openBuyModal(card.dataset.productId); });
-    carteiraContainer.addEventListener('click', (e) => { const btn = e.target.closest('.sell-btn'); if (btn) openSellModal(btn.dataset.productId); });
-    [buyModal, depositModal, sellModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); }); });
-    [buyModalCloseBtn, depositModalCloseBtn, sellModalCloseBtn].forEach(btn => btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')));
+    
+    carteiraContainer.addEventListener('click', (e) => { 
+        const sellBtn = e.target.closest('.sell-btn');
+        const sellAllBtn = e.target.closest('.sell-all-btn');
+
+        if (sellBtn) {
+            openSellModal(sellBtn.dataset.productId);
+        } else if (sellAllBtn) {
+            const productId = sellAllBtn.dataset.productId;
+            const ativo = userCarteira.ativos.find(a => a.produtoId == productId);
+            if (ativo) {
+                // Chama o modal de confirmação
+                openConfirmModal(
+                    `Tem certeza que deseja vender todas as ${ativo.quantidade.toFixed(4)} cotas de ${ativo.nome}?`,
+                    () => {
+                        // Esta função será executada apenas se o usuário clicar em "Confirmar"
+                        handleVenda(ativo.produtoId, ativo.quantidade, sellAllBtn);
+                    }
+                );
+            }
+        }
+    });
+
+    [buyModal, depositModal, sellModal, confirmModal].forEach(modal => { 
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) modal.classList.add('hidden'); 
+        }); 
+    });
+    [buyModalCloseBtn, depositModalCloseBtn, sellModalCloseBtn, confirmModalCloseBtn].forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
+    });
     investirRecomendacaoBtn.addEventListener('click', (e) => handleInvestirRecomendacao(e.currentTarget));
 
     // --- INICIALIZAÇÃO ---

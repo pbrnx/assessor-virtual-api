@@ -98,3 +98,82 @@ body { font-family: var(--font-family); background-color: var(--color-background
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.carteira-item .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem; /* Espaço entre o nome do ativo e os botões */
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.5rem; /* Espaço entre os botões */
+    align-items: center;
+}
+
+/* SUBSTITUA as regras .sell-btn e .sell-all-btn existentes por este bloco */
+
+/* Estilo base para os botões de venda */
+.sell-btn, .sell-all-btn {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--color-danger);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    min-width: 110px; /* Garante que ambos tenham a mesma largura mínima */
+    text-align: center; /* Garante que o texto fique centralizado */
+    box-sizing: border-box; /* Evita que o padding afete a largura final */
+}
+
+
+.sell-btn {
+    background: transparent;
+    color: var(--color-danger);
+}
+
+.sell-btn:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.sell-all-btn {
+    background: var(--color-danger);
+    color: white;
+}
+
+.sell-all-btn:hover {
+    background-color: var(--color-danger-hover);
+    border-color: var(--color-danger-hover);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    justify-content: flex-end; 
+}
+
+.modal-actions .form-button {
+    width: auto;
+    padding: 0.75rem 1.5rem;
+}
+
+
+#confirm-modal-cancel-btn {
+    background-color: transparent;
+    color: var(--color-text-body);
+    border: 1px solid var(--color-border);
+}
+
+#confirm-modal-cancel-btn:hover {
+    background-color: var(--color-background);
+}
