@@ -22,43 +22,51 @@ class RecomendacaoService {
         }
         const perfilCliente = perfis[cliente.perfilId];
 
-        // 2. Busca os produtos de investimento disponíveis
+        // 2. Busca e categoriza os produtos de investimento disponíveis por risco
         const todosProdutos = await produtoInvestimentoRepository.findAll();
+        const produtosPorRisco = {
+            [ProdutoInvestimento.RISCOS.BAIXO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.BAIXO),
+            [ProdutoInvestimento.RISCOS.MEDIO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.MEDIO),
+            [ProdutoInvestimento.RISCOS.ALTO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.ALTO)
+        };
 
-        // 3. Aplica a regra de negócio para montar a carteira
+        // 3. Aplica a regra de negócio para montar a carteira de forma dinâmica
         let carteira = [];
         switch (perfilCliente.nome) {
             case PerfilInvestidor.TIPOS.CONSERVADOR:
                 carteira = [
-                    { produto: todosProdutos.find(p => p.nome === 'Tesouro Selic'), percentual: 70 },
-                    { produto: todosProdutos.find(p => p.nome === 'CDB PagSeguro'), percentual: 30 }
+                    // Ex: 70% no primeiro produto de baixo risco, 30% no segundo
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 70 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][1], percentual: 30 }
                 ];
                 break;
             case PerfilInvestidor.TIPOS.MODERADO:
                 carteira = [
-                    { produto: todosProdutos.find(p => p.nome === 'Tesouro Selic'), percentual: 40 },
-                    { produto: todosProdutos.find(p => p.nome === 'Fundo Imobiliário HGLG11'), percentual: 40 },
-                    { produto: todosProdutos.find(p => p.nome === 'Fundo de Ações Tech'), percentual: 20 }
+                    // Ex: 40% em baixo risco, 40% em médio e 20% em alto
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 40 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.MEDIO][0], percentual: 40 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 20 }
                 ];
                 break;
             case PerfilInvestidor.TIPOS.ARROJADO:
                 carteira = [
-                    { produto: todosProdutos.find(p => p.nome === 'Tesouro Selic'), percentual: 10 },
-                    { produto: todosProdutos.find(p => p.nome === 'Fundo de Ações Tech'), percentual: 50 },
-                    { produto: todosProdutos.find(p => p.nome === 'Ações da Petrobras'), percentual: 40 }
+                    // Ex: 10% em baixo risco, 50% em um produto de alto risco e 40% em outro
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 10 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 50 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][1], percentual: 40 }
                 ];
                 break;
             default:
                 throw new Error('Perfil de investidor desconhecido.');
         }
         
-        // Remove produtos que não foram encontrados (caso o nome mude)
+        // Remove da recomendação os itens cujo produto não foi encontrado 
+        // (ex: não há produtos suficientes para uma categoria de risco)
         carteira = carteira.filter(item => item.produto);
 
         return { perfilCliente, carteira };
     }
 
-    // Dentro da classe RecomendacaoService, adicione este método:
     /**
      * Investe o saldo do cliente na carteira recomendada.
      * @param {number} clienteId
@@ -78,29 +86,19 @@ class RecomendacaoService {
         const saldoParaInvestir = cliente.saldo;
 
         // 2. Iterar sobre a recomendação e comprar cada ativo
-        // Usamos um loop for...of para garantir que as compras ocorram em sequência
         for (const item of carteiraRecomendada) {
             const produto = item.produto;
-            const percentual = item.percentual / 100; // ex: 40% -> 0.40
-            
-            // Calcula o valor a ser alocado neste produto
+            const percentual = item.percentual / 100;
             const valorAlocar = saldoParaInvestir * percentual;
-            
-            // Calcula a quantidade de cotas a comprar
             const quantidadeComprar = valorAlocar / produto.preco;
             
-            // Se a quantidade for muito pequena, pulamos para o próximo
             if (quantidadeComprar < 0.0001) {
                 continue;
             }
 
             try {
-                // Chama o serviço de carteira para efetuar a compra
-                // O service já valida se há saldo (o que sempre haverá na primeira iteração)
-                // e debita o valor a cada compra.
                 await carteiraService.comprarAtivo(clienteId, produto.id, quantidadeComprar);
             } catch (error) {
-                // Se uma compra falhar (ex: saldo acabou por arredondamento), loga o erro e continua
                 console.warn(`Não foi possível comprar ${produto.nome}: ${error.message}`);
                 continue;
             }
