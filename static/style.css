@@ -20,7 +20,20 @@ body { font-family: var(--font-family); background-color: var(--color-background
 .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
 .form-input { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-size: 1rem; }
 .form-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.2); }
-.form-button { width: 100%; padding: 1rem; background-color: var(--color-primary); color: white; border: none; border-radius: var(--border-radius); font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s; }
+.form-button { 
+    padding: 1rem; 
+    background-color: var(--color-primary); 
+    color: white; 
+    border: none; 
+    border-radius: var(--border-radius); 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: background-color 0.2s; 
+}
+.auth-form .form-button, .modal-content .form-button {
+    width: 100%;
+}
 .form-button:hover { background-color: var(--color-primary-hover); }
 .form-button.secondary { background-color: var(--color-secondary); }
 .form-button.secondary:hover { background-color: #10a37f; }
@@ -45,7 +58,8 @@ body { font-family: var(--font-family); background-color: var(--color-background
 .main-content .dashboard-section h2 { border-color: var(--color-primary); }
 .sidebar .dashboard-section h2 { border-color: var(--color-secondary); }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-#investir-recomendacao-btn { width: auto; padding: 0.75rem 1.5rem; font-size: 1rem; }
+.section-header > div { display: flex; align-items: center; gap: 1rem; }
+#investir-recomendacao-btn, #recalcular-recomendacao-btn { width: auto; padding: 0.75rem 1.5rem; font-size: 1rem; flex-shrink: 0; }
 .recomendacao-container, .marketplace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
 .recomendacao-card { background: linear-gradient(135deg, var(--color-primary) 0%, #6f85f8 100%); color: white; padding: 1.5rem; border-radius: var(--border-radius); }
 .recomendacao-card .percentual { font-size: 2.5rem; font-weight: 700; text-align: right; margin-top: 1rem; }
@@ -76,15 +90,9 @@ body { font-family: var(--font-family); background-color: var(--color-background
 .modal-content h3 { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--color-primary); }
 .info-saldo { background: #f4f7fa; padding: 0.75rem; border-radius: var(--border-radius); margin-bottom: 1rem; text-align: center; font-weight: 500; }
 .valor-total { font-weight: bold; }
-
-.valor-total { font-weight: bold; }
-
-
 #loading-overlay {
-   
-    background: rgba(26, 32, 44, 0.7); 
+    background: rgba(26, 32, 44, 0.7);
 }
-
 .loader {
     border: 6px solid var(--color-background);
     border-top: 6px solid var(--color-primary);
@@ -93,28 +101,21 @@ body { font-family: var(--font-family); background-color: var(--color-background
     height: 60px;
     animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-
 .carteira-item .item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.5rem; /* Espaço entre o nome do ativo e os botões */
+    gap: 0.5rem;
 }
-
 .item-actions {
     display: flex;
-    gap: 0.5rem; /* Espaço entre os botões */
+    gap: 0.5rem;
     align-items: center;
 }
-
-/* SUBSTITUA as regras .sell-btn e .sell-all-btn existentes por este bloco */
-
-/* Estilo base para os botões de venda */
 .sell-btn, .sell-all-btn {
     padding: 0.25rem 0.75rem;
     border: 1px solid var(--color-danger);
@@ -123,57 +124,41 @@ body { font-family: var(--font-family); background-color: var(--color-background
     font-size: 0.8rem;
     font-weight: 600;
     transition: all 0.2s;
-    min-width: 110px; /* Garante que ambos tenham a mesma largura mínima */
-    text-align: center; /* Garante que o texto fique centralizado */
-    box-sizing: border-box; /* Evita que o padding afete a largura final */
+    min-width: 110px;
+    text-align: center;
+    box-sizing: border-box;
 }
-
-
 .sell-btn {
     background: transparent;
     color: var(--color-danger);
 }
-
 .sell-btn:hover {
     background-color: var(--color-danger);
     color: white;
 }
-
 .sell-all-btn {
     background: var(--color-danger);
     color: white;
 }
-
 .sell-all-btn:hover {
     background-color: var(--color-danger-hover);
     border-color: var(--color-danger-hover);
 }
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-
 .modal-actions {
     display: flex;
     gap: 1rem;
     margin-top: 2rem;
-    justify-content: flex-end; 
+    justify-content: flex-end;
 }
-
 .modal-actions .form-button {
     width: auto;
     padding: 0.75rem 1.5rem;
 }
-
-
 #confirm-modal-cancel-btn {
     background-color: transparent;
     color: var(--color-text-body);
     border: 1px solid var(--color-border);
 }
-
 #confirm-modal-cancel-btn:hover {
     background-color: var(--color-background);
-}
+}   

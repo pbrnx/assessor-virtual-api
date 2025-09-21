@@ -12,6 +12,15 @@ const perfis = {
     3: new PerfilInvestidor(3, PerfilInvestidor.TIPOS.ARROJADO, 'Tolera altos riscos em busca de maior rentabilidade.')
 };
 
+// Função para embaralhar um array
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 class RecomendacaoService {
 
     async gerarRecomendacao(clienteId) {
@@ -25,9 +34,9 @@ class RecomendacaoService {
         // 2. Busca e categoriza os produtos de investimento disponíveis por risco
         const todosProdutos = await produtoInvestimentoRepository.findAll();
         const produtosPorRisco = {
-            [ProdutoInvestimento.RISCOS.BAIXO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.BAIXO),
-            [ProdutoInvestimento.RISCOS.MEDIO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.MEDIO),
-            [ProdutoInvestimento.RISCOS.ALTO]: todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.ALTO)
+            [ProdutoInvestimento.RISCOS.BAIXO]: shuffle(todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.BAIXO)),
+            [ProdutoInvestimento.RISCOS.MEDIO]: shuffle(todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.MEDIO)),
+            [ProdutoInvestimento.RISCOS.ALTO]: shuffle(todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.ALTO))
         };
 
         // 3. Aplica a regra de negócio para montar a carteira de forma dinâmica
@@ -35,25 +44,25 @@ class RecomendacaoService {
         switch (perfilCliente.nome) {
             case PerfilInvestidor.TIPOS.CONSERVADOR:
                 carteira = [
-                    // Ex: 70% no primeiro produto de baixo risco, 30% no segundo
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 70 },
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][1], percentual: 30 }
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 60 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][1], percentual: 25 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.MEDIO][0], percentual: 15 }
                 ];
                 break;
             case PerfilInvestidor.TIPOS.MODERADO:
                 carteira = [
-                    // Ex: 40% em baixo risco, 40% em médio e 20% em alto
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 40 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 30 },
                     { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.MEDIO][0], percentual: 40 },
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 20 }
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.MEDIO][1], percentual: 20 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 10 }
                 ];
                 break;
             case PerfilInvestidor.TIPOS.ARROJADO:
                 carteira = [
-                    // Ex: 10% em baixo risco, 50% em um produto de alto risco e 40% em outro
                     { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.BAIXO][0], percentual: 10 },
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 50 },
-                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][1], percentual: 40 }
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.MEDIO][0], percentual: 30 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][0], percentual: 40 },
+                    { produto: produtosPorRisco[ProdutoInvestimento.RISCOS.ALTO][1], percentual: 20 }
                 ];
                 break;
             default:

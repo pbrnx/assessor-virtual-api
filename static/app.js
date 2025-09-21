@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sellModalBody = document.getElementById('sell-modal-body');
     const alertContainer = document.getElementById('alert-container');
     const investirRecomendacaoBtn = document.getElementById('investir-recomendacao-btn');
+    const recalcularRecomendacaoBtn = document.getElementById('recalcular-recomendacao-btn');
     const carteiraChartCanvas = document.getElementById('carteira-chart').getContext('2d');
     const loadingOverlay = document.getElementById('loading-overlay');
     
@@ -311,6 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { showAlert(error.message); }
     };
 
+    const handleRecalcularRecomendacao = async (button) => {
+        try {
+            const recomendacaoData = await apiCall(`/clientes/${currentUser.id}/recomendacoes`, {}, button);
+            renderRecomendacao(recomendacaoData);
+            showAlert('Novas recomendações geradas!', 'success');
+        } catch (error) {
+            showAlert(error.message);
+        }
+    };
+
     // --- EVENT LISTENERS ---
     forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value, e.submitter); });
     forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value, e.submitter); });
@@ -353,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
     });
     investirRecomendacaoBtn.addEventListener('click', (e) => handleInvestirRecomendacao(e.currentTarget));
+    recalcularRecomendacaoBtn.addEventListener('click', (e) => handleRecalcularRecomendacao(e.currentTarget));
 
     // --- INICIALIZAÇÃO ---
     const init = () => { if (sessionStorage.getItem('currentUser')) setUserSession(JSON.parse(sessionStorage.getItem('currentUser'))); else switchView('login'); };
