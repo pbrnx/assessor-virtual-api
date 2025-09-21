@@ -134,6 +134,7 @@ paths:
     get:
       tags: [Clientes]
       summary: Obtém a carteira de investimentos recomendada (sugestão)
+      description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente. Cada chamada a este endpoint pode retornar uma combinação diferente de ativos, mantendo a alocação de risco apropriada para o perfil.
       parameters:
         - $ref: '#/components/parameters/ClienteId'
       responses:
