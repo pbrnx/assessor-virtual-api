@@ -75,19 +75,21 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmModalMessage.textContent = message;
         confirmModal.classList.remove('hidden');
 
-        // Para evitar múltiplos listeners, clonamos e substituímos os botões
-        const newConfirmBtn = confirmModalConfirmBtn.cloneNode(true);
-        confirmModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, confirmModalConfirmBtn);
-        
-        const newCancelBtn = confirmModalCancelBtn.cloneNode(true);
-        confirmModalCancelBtn.parentNode.replaceChild(newCancelBtn, confirmModalCancelBtn);
+        // Busca a referência ATUAL dos botões que estão na página
+        const currentConfirmBtn = document.getElementById('confirm-modal-confirm-btn');
+        const newConfirmBtn = currentConfirmBtn.cloneNode(true); // Clona para remover eventos antigos
+        currentConfirmBtn.parentNode.replaceChild(newConfirmBtn, currentConfirmBtn); // Substitui no DOM
 
-        // Adicionamos os novos listeners
+        const currentCancelBtn = document.getElementById('confirm-modal-cancel-btn');
+        const newCancelBtn = currentCancelBtn.cloneNode(true);
+        currentCancelBtn.parentNode.replaceChild(newCancelBtn, currentCancelBtn);
+
+        // Adiciona os novos eventos aos botões que acabaram de ser inseridos na página
         newConfirmBtn.addEventListener('click', () => {
             confirmModal.classList.add('hidden');
             onConfirm();
         });
-        
+
         newCancelBtn.addEventListener('click', () => {
             confirmModal.classList.add('hidden');
         });

@@ -56,14 +56,14 @@ body { font-family: var(--font-family); background-color: var(--color-background
 .carteira-placeholder { text-align: center; color: var(--color-text-body); padding: 2rem; background: #f8f9fa; border-radius: var(--border-radius); }
 .sell-btn { padding: 0.25rem 0.75rem; border: 1px solid var(--color-danger); background: transparent; color: var(--color-danger); border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; }
 .sell-btn:hover { background-color: var(--color-danger); color: white; }
-.marketplace-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.marketplace-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding:2%; }
 .filters { display: flex; gap: 0.5rem; }
 .filter-btn { padding: 0.5rem 1rem; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 20px; cursor: pointer; }
 .filter-btn.active { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
 .product-card { background: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); padding: 1.5rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
 .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
 .product-card .price { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.75rem; }
-.risk-badge { padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; color: white; }
+.risk-badge { padding: 0.25rem 0.75rem; border-radius: 15px; font-weight: 600; color: white; margin:0.75rem;}
 .risk-badge.baixo { background-color: #28a745; }
 .risk-badge.médio { background-color: #fd7e14; }
 .risk-badge.alto { background-color: #dc3545; }
