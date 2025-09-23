@@ -1,5 +1,5 @@
 # Assessor de Investimentos Virtual
-<img width="1899" height="948" alt="image" src="https://github.com/user-attachments/assets/daec51b8-f559-4798-bc7b-e57053d4091f" />
+<img width="1902" height="952" alt="image" src="https://github.com/user-attachments/assets/9cc01489-d989-4878-9a85-f66c53c2e802" />
 
 ## Integrantes 
 - Nome: Pedro Augusto Carneiro Barone Bomfim - RM: 99781
