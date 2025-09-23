@@ -153,6 +153,13 @@ paths:
       summary: Investe o saldo disponível na carteira recomendada
       parameters:
         - $ref: '#/components/parameters/ClienteId'
+      # ADICIONADO: O corpo da requisição agora é obrigatório
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestirRecomendacaoRequest'
       responses:
         '200':
           description: Investimento realizado com sucesso. Retorna a carteira atualizada.
@@ -399,6 +406,14 @@ components:
         risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
         preco: { type: number, format: float, example: 105.50 }
       required: [nome, tipo, risco, preco]
+    ItemRecomendado:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 1 }
+        nome: { type: string, example: "Tesouro Selic" }
+        tipo: { type: string, example: "Renda Fixa" }
+        risco: { type: string, example: "Baixo" }
+        percentualAlocacao: { type: integer, example: 40 }
     RecomendacaoResponse:
       type: object
       properties:
@@ -407,12 +422,17 @@ components:
         carteiraRecomendada:
           type: array
           items:
-            type: object
-            properties:
-              nome: { type: string, example: "Tesouro Selic" }
-              tipo: { type: string, example: "Renda Fixa" }
-              risco: { type: string, example: "Baixo" }
-              percentualAlocacao: { type: integer, example: 40 }
+            # MODIFICADO: Referencia o novo schema
+            $ref: '#/components/schemas/ItemRecomendado'
+
+    # --- NOVO SCHEMA PARA A REQUISIÇÃO DE INVESTIR ---
+    InvestirRecomendacaoRequest:
+      type: object
+      properties:
+        carteiraRecomendada:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemRecomendado'
     
     # --- NOVOS SCHEMAS DE CARTEIRA E TRANSAÇÕES ---
     DepositoRequest:
