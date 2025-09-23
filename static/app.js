@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUser = null; // { id, nome, email, perfilId, saldo }
     let allProducts = [];
     let userCarteira = null; // { ativos: [], valorTotalInvestido: 0 }
+    let currentRecomendacao = null; // ADICIONADA: Para guardar a recomendação atual
     let carteiraChartInstance = null; // Para guardar a instância do gráfico
 
     // --- SELETORES DE ELEMENTOS DO DOM ---
@@ -234,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 apiCall(`/investimentos`),
                 apiCall(`/clientes/${currentUser.id}/carteira`)
             ]);
-            allProducts = productsData; userCarteira = carteiraData;
+            allProducts = productsData;
+            userCarteira = carteiraData;
+            currentRecomendacao = recomendacaoData.carteiraRecomendada.map(item => ({...item, produtoId: allProducts.find(p => p.nome === item.nome)?.id })); // Guarda a recomendação com IDs
             renderDashboardHeader(currentUser, recomendacaoData);
             renderRecomendacao(recomendacaoData);
             renderMarketplace('todos');
@@ -303,8 +306,18 @@ document.addEventListener('DOMContentLoaded', () => {
             showAlert('Você não tem saldo para investir. Faça um depósito primeiro.');
             return;
         }
+        if (!currentRecomendacao || currentRecomendacao.length === 0) {
+            showAlert('Não há uma recomendação carregada para investir.');
+            return;
+        }
         try {
-            await apiCall(`/clientes/${currentUser.id}/recomendacoes/investir`, { method: 'POST' }, button);
+            // Envia a recomendação guardada no corpo da requisição
+            await apiCall(`/clientes/${currentUser.id}/recomendacoes/investir`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ carteiraRecomendada: currentRecomendacao }) 
+            }, button);
+            
             currentUser = await apiCall(`/clientes/${currentUser.id}`);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Investimento na carteira recomendada realizado com sucesso!', 'success');
@@ -315,6 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleRecalcularRecomendacao = async (button) => {
         try {
             const recomendacaoData = await apiCall(`/clientes/${currentUser.id}/recomendacoes`, {}, button);
+            // Atualiza a recomendação guardada, adicionando o ID do produto
+            currentRecomendacao = recomendacaoData.carteiraRecomendada.map(item => ({...item, produtoId: allProducts.find(p => p.nome === item.nome)?.id }));
             renderRecomendacao(recomendacaoData);
             showAlert('Novas recomendações geradas!', 'success');
         } catch (error) {

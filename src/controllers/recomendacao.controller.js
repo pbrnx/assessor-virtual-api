@@ -25,9 +25,12 @@ class RecomendacaoController {
     async investir(req, res, next) {
         try {
             const clienteId = req.params.id;
-            const carteiraFinal = await recomendacaoService.investirRecomendacao(clienteId);
+            // MODIFICADO: Pega a carteira do corpo da requisição
+            const { carteiraRecomendada } = req.body;
+
+            // MODIFICADO: Passa a carteira para o serviço
+            const carteiraFinal = await recomendacaoService.investirRecomendacao(clienteId, carteiraRecomendada);
             
-            // Usa o DTO de Carteira para padronizar a resposta
             const carteiraResponse = new CarteiraResponseDTO(carteiraFinal);
             res.status(200).json(carteiraResponse);
 

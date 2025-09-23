@@ -12,7 +12,7 @@ const perfis = {
     3: new PerfilInvestidor(3, PerfilInvestidor.TIPOS.ARROJADO, 'Tolera altos riscos em busca de maior rentabilidade.')
 };
 
-// Função para embaralhar um array
+// RESTAURADA: Função para embaralhar um array
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -31,7 +31,7 @@ class RecomendacaoService {
         }
         const perfilCliente = perfis[cliente.perfilId];
 
-        // 2. Busca e categoriza os produtos de investimento disponíveis por risco
+        // 2. Busca e categoriza os produtos de investimento disponíveis por risco (com shuffle)
         const todosProdutos = await produtoInvestimentoRepository.findAll();
         const produtosPorRisco = {
             [ProdutoInvestimento.RISCOS.BAIXO]: shuffle(todosProdutos.filter(p => p.risco === ProdutoInvestimento.RISCOS.BAIXO)),
@@ -69,35 +69,38 @@ class RecomendacaoService {
                 throw new Error('Perfil de investidor desconhecido.');
         }
         
-        // Remove da recomendação os itens cujo produto não foi encontrado 
-        // (ex: não há produtos suficientes para uma categoria de risco)
         carteira = carteira.filter(item => item.produto);
 
         return { perfilCliente, carteira };
     }
 
     /**
-     * Investe o saldo do cliente na carteira recomendada.
+     * MODIFICADO: Agora recebe a carteira recomendada como parâmetro.
      * @param {number} clienteId
+     * @param {Array} carteiraRecomendada - A carteira enviada pelo frontend.
      */
-    async investirRecomendacao(clienteId) {
-        // 1. Obter o saldo do cliente e a recomendação
+    async investirRecomendacao(clienteId, carteiraRecomendada) {
+        // 1. Obter o saldo do cliente
         const cliente = await clienteService.getClienteById(clienteId);
         if (!cliente.saldo || cliente.saldo <= 0) {
             throw new Error('Saldo insuficiente para investir.');
         }
-
-        const { carteira: carteiraRecomendada } = await this.gerarRecomendacao(clienteId);
         if (!carteiraRecomendada || carteiraRecomendada.length === 0) {
-            throw new Error('Não foi possível obter a carteira recomendada.');
+            throw new Error('A carteira recomendada para investir está vazia.');
         }
 
         const saldoParaInvestir = cliente.saldo;
 
-        // 2. Iterar sobre a recomendação e comprar cada ativo
+        // 2. Itera sobre a recomendação RECEBIDA e compra cada ativo
         for (const item of carteiraRecomendada) {
-            const produto = item.produto;
-            const percentual = item.percentual / 100;
+            // Precisamos do preço atual do produto, então buscamos ele no banco
+            const produto = await produtoInvestimentoRepository.findById(item.produtoId);
+            if (!produto) {
+                 console.warn(`Produto com ID ${item.produtoId} não encontrado. Pulando.`);
+                 continue;
+            }
+
+            const percentual = item.percentualAlocacao / 100;
             const valorAlocar = saldoParaInvestir * percentual;
             const quantidadeComprar = valorAlocar / produto.preco;
             
