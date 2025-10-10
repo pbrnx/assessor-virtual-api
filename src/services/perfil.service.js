@@ -1,10 +1,13 @@
 // src/services/perfil.service.js
-const clienteRepository = require('../repositories/cliente.repository');
-const clienteService = require('./cliente.service');
 const PerfilInvestidor = require('../models/perfilInvestidor.model');
-const { execute } = require('../config/database'); // Importar execute para buscar perfis
+const { execute } = require('../config/database');
 
 class PerfilService {
+    // Recebe as dependências no construtor
+    constructor(clienteService, clienteRepository) {
+        this.clienteService = clienteService;
+        this.clienteRepository = clienteRepository;
+    }
 
     async _getPerfisDisponiveis() {
         const sql = `SELECT id, nome, descricao FROM investimento_perfil`;
@@ -31,8 +34,8 @@ class PerfilService {
     }
 
     async definirPerfilParaCliente(clienteId, respostas) {
-        // 1. Garante que o cliente existe (reutiliza o service)
-        await clienteService.getClienteById(clienteId);
+        // 1. Garante que o cliente existe (usa a dependência injetada)
+        await this.clienteService.getClienteById(clienteId);
 
         // 2. Calcula o novo perfil
         const perfilCalculado = await this.calcularPerfil(respostas);
@@ -40,13 +43,13 @@ class PerfilService {
             throw new Error('Não foi possível calcular o perfil com as respostas fornecidas.');
         }
 
-        // 3. Atualiza o cliente com o ID do novo perfil usando o repository
-        await clienteRepository.updatePerfil(clienteId, perfilCalculado.id);
+        // 3. Atualiza o cliente com o ID do novo perfil
+        await this.clienteRepository.updatePerfil(clienteId, perfilCalculado.id);
 
         console.log(`Perfil do cliente ${clienteId} atualizado para: ${perfilCalculado.nome}`);
-
         return perfilCalculado;
     }
 }
 
-module.exports = new PerfilService();
+// Exporta a CLASSE
+module.exports = PerfilService;

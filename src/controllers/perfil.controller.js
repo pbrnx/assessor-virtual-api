@@ -1,9 +1,19 @@
 // src/controllers/perfil.controller.js
-const perfilService = require('../services/perfil.service');
+const PerfilService = require('../services/perfil.service');
+const ClienteService = require('../services/cliente.service');
+const clienteRepository = require('../repositories/cliente.repository');
 const { PerfilRequestDTO, PerfilResponseDTO } = require('../dtos/perfil.dto');
 
-class PerfilController {
+// --- Injeção de Dependência ---
+// 1. Cria a instância do repositório (dependência de baixo nível)
+const clienteRepo = clienteRepository; 
+// 2. Cria a instância do ClienteService, injetando o repositório
+const clienteService = new ClienteService(clienteRepo);
+// 3. Cria a instância do PerfilService, injetando suas dependências
+const perfilService = new PerfilService(clienteService, clienteRepo);
+// -----------------------------
 
+class PerfilController {
     async definirPerfil(req, res) {
         try {
             const clienteId = req.params.id;
@@ -19,11 +29,9 @@ class PerfilController {
             return res.status(200).json(perfilResponse);
 
         } catch (error) {
-            // Trata erros como "Cliente não encontrado" ou erros no cálculo
             return res.status(404).json({ message: error.message });
         }
     }
 }
 
-// Certifique-se de que a exportação está correta
 module.exports = new PerfilController();

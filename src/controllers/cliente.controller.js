@@ -1,6 +1,10 @@
 // src/controllers/cliente.controller.js
-const clienteService = require('../services/cliente.service');
+const ClienteService = require('../services/cliente.service'); // Importa a CLASSE
+const clienteRepository = require('../repositories/cliente.repository'); // Importa o REPOSITORY
 const { ClienteRequestDTO, ClienteResponseDTO, DepositoRequestDTO } = require('../dtos/cliente.dto');
+
+// Injeta o repositório no serviço no momento da criação da instância
+const clienteService = new ClienteService(clienteRepository);
 
 class ClienteController {
 
@@ -33,6 +37,7 @@ class ClienteController {
         }
     }
 
+    // ... os outros métodos (findAll, update, delete, depositar) continuam iguais ...
     async findAll(req, res, next) {
         try {
             const clientes = await clienteService.getAllClientes();
