@@ -24,7 +24,14 @@
                 <div class="auth-card">
                     <div class="auth-header"><h1>Acesse sua Conta</h1></div>
                     <form id="login-form" class="auth-form">
-                        <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" class="form-input" required placeholder="seu@email.com"></div>
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" class="form-input" required placeholder="seu@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-senha">Senha</label>
+                            <input type="password" id="login-senha" class="form-input" required>
+                        </div>
                         <button type="submit" class="form-button">Entrar</button>
                         <p class="auth-footer">Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
                     </form>
@@ -34,8 +41,18 @@
                  <div class="auth-card">
                     <div class="auth-header"><h1>Crie sua Conta</h1></div>
                     <form id="register-form" class="auth-form">
-                        <div class="form-group"><label for="register-nome">Nome Completo</label><input type="text" id="register-nome" class="form-input" required></div>
-                        <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" class="form-input" required></div>
+                        <div class="form-group">
+                            <label for="register-nome">Nome Completo</label>
+                            <input type="text" id="register-nome" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">Email</label>
+                            <input type="email" id="register-email" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-senha">Senha</label>
+                            <input type="password" id="register-senha" class="form-input" required>
+                        </div>
                         <button type="submit" class="form-button">Cadastrar</button>
                         <p class="auth-footer">Já tem uma conta? <a href="#" id="show-login-link">Faça login</a></p>
                     </form>

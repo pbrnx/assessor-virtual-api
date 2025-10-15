@@ -4,28 +4,41 @@ const router = express.Router();
 const clienteController = require('../controllers/cliente.controller');
 const perfilController = require('../controllers/perfil.controller');
 const recomendacaoController = require('../controllers/recomendacao.controller');
-const carteiraRoutes = require('./carteira.routes'); // Importa as novas rotas da carteira
+const carteiraRoutes = require('./carteira.routes');
 
-// Rotas de Cliente (CRUD completo)
-router.post('/', clienteController.create);
-router.get('/', clienteController.findAll);
-router.get('/:id', clienteController.findById);
-router.put('/:id', clienteController.update);
-router.delete('/:id', clienteController.delete);
+// Importa o nosso guardião (middleware)
+const authJwt = require('../middlewares/authJwt');
+
+// --- ROTAS PROTEGIDAS ---
+// Todas as rotas abaixo agora exigem um token JWT válido.
+// O middleware [authJwt.verifyToken] é executado antes do controller.
+
+// A rota para listar todos os clientes (geralmente uma rota de admin)
+router.get('/', [authJwt.verifyToken], clienteController.findAll);
+
+// Rotas específicas de um cliente
+router.get('/:id', [authJwt.verifyToken], clienteController.findById);
+router.put('/:id', [authJwt.verifyToken], clienteController.update);
+router.delete('/:id', [authJwt.verifyToken], clienteController.delete);
 
 // Rota de Perfil
-router.post('/:id/perfil', perfilController.definirPerfil);
+router.post('/:id/perfil', [authJwt.verifyToken], perfilController.definirPerfil);
 
 // Rota de Recomendação
-router.get('/:id/recomendacoes', recomendacaoController.getRecomendacao);
+router.get('/:id/recomendacoes', [authJwt.verifyToken], recomendacaoController.getRecomendacao);
 
-// NOVO: Rota para Depósito
-router.post('/:id/depositar', clienteController.depositar);
+// Rota para Depósito
+router.post('/:id/depositar', [authJwt.verifyToken], clienteController.depositar);
 
-// NOVO: Aninha as rotas de carteira sob /clientes/:id/carteira
-router.use('/:id/carteira', carteiraRoutes);
+// Aninha as rotas de carteira (que também serão protegidas internamente)
+router.use('/:id/carteira', [authJwt.verifyToken], carteiraRoutes);
 
 // Rota para investir automaticamente na carteira recomendada
-router.post('/:id/recomendacoes/investir', recomendacaoController.investir);
+router.post('/:id/recomendacoes/investir', [authJwt.verifyToken], recomendacaoController.investir);
+
+
+// --- ROTAS PÚBLICAS (se houver) ---
+// A rota de criação foi movida para /auth/register, então não a temos mais aqui.
+// router.post('/', clienteController.create); // <<<< REMOVIDA
 
 module.exports = router;

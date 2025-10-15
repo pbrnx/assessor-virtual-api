@@ -6,13 +6,15 @@ const Cliente = require('../models/cliente.model');
 class ClienteRepository {
 
     async create(clienteData) {
-        const sql = `INSERT INTO investimento_cliente (nome, email) 
-                     VALUES (:nome, :email) 
+        // Agora inclui a senha no INSERT
+        const sql = `INSERT INTO investimento_cliente (nome, email, senha) 
+                     VALUES (:nome, :email, :senha) 
                      RETURNING id, saldo INTO :id, :saldo`;
         
         const binds = {
             nome: clienteData.nome,
             email: clienteData.email,
+            senha: clienteData.senha, // <<<< DADO NOVO
             id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
             saldo: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
         };
@@ -21,33 +23,38 @@ class ClienteRepository {
         const id = result.outBinds.id[0];
         const saldo = result.outBinds.saldo[0];
         
-        return new Cliente(id, clienteData.nome, clienteData.email, saldo);
+        // Retorna um novo cliente, mas sem a senha por segurança
+        return new Cliente(id, clienteData.nome, clienteData.email, null, saldo);
     }
 
     async findById(id) {
+        // Não vamos retornar a senha aqui por segurança, apenas nos métodos de busca específicos para auth
         const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente WHERE id = :id`;
         const result = await execute(sql, [parseInt(id, 10)]);
         
         if (result.rows.length === 0) return null;
 
         const row = result.rows[0];
-        return new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID);
+        return new Cliente(row.ID, row.NOME, row.EMAIL, null, row.SALDO, row.PERFIL_ID);
     }
 
     async findAll() {
+        // Nunca retornar a senha em listagens
         const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente`;
         const result = await execute(sql);
-        return result.rows.map(row => new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID));
+        return result.rows.map(row => new Cliente(row.ID, row.NOME, row.EMAIL, null, row.SALDO, row.PERFIL_ID));
     }
 
     async findByEmail(email) {
-        const sql = `SELECT id, nome, email, saldo, perfil_id FROM investimento_cliente WHERE email = :email`;
+        // Este método precisa retornar a senha para o processo de login
+        const sql = `SELECT id, nome, email, senha, saldo, perfil_id FROM investimento_cliente WHERE email = :email`;
         const result = await execute(sql, [email]);
         
         if (result.rows.length === 0) return null;
         
         const row = result.rows[0];
-        return new Cliente(row.ID, row.NOME, row.EMAIL, row.SALDO, row.PERFIL_ID);
+        // Retorna o objeto Cliente completo, incluindo a senha
+        return new Cliente(row.ID, row.NOME, row.EMAIL, row.SENHA, row.SALDO, row.PERFIL_ID);
     }
 
     async update(id, clienteData) {
@@ -62,7 +69,7 @@ class ClienteRepository {
         };
 
         await execute(sql, binds, { autoCommit: true });
-        return await this.findById(id); // Retorna o cliente atualizado com o saldo
+        return await this.findById(id);
     }
 
     async delete(id) {
@@ -75,8 +82,7 @@ class ClienteRepository {
         const sql = `UPDATE investimento_cliente SET perfil_id = :perfilId WHERE id = :clienteId`;
         await execute(sql, [perfilId, clienteId], { autoCommit: true });
     }
-
-    // NOVO: Método para atualizar o saldo
+    
     async updateSaldo(clienteId, novoSaldo) {
         const sql = `UPDATE investimento_cliente SET saldo = :novoSaldo WHERE id = :clienteId`;
         await execute(sql, [novoSaldo, clienteId], { autoCommit: true });

@@ -3,11 +3,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIÁVEIS DE ESTADO E CONSTANTES ---
     const API_BASE_URL = '/api';
-    let currentUser = null; // { id, nome, email, perfilId, saldo }
+    let currentUser = null; // { id, nome, email }
+    let authToken = null; // <<<< NOVO: Para armazenar o token JWT
     let allProducts = [];
     let userCarteira = null; // { ativos: [], valorTotalInvestido: 0 }
-    let currentRecomendacao = null; // ADICIONADA: Para guardar a recomendação atual
-    let carteiraChartInstance = null; // Para guardar a instância do gráfico
+    let currentRecomendacao = null; 
+    let carteiraChartInstance = null;
 
     // --- SELETORES DE ELEMENTOS DO DOM ---
     const views = {
@@ -46,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const carteiraChartCanvas = document.getElementById('carteira-chart').getContext('2d');
     const loadingOverlay = document.getElementById('loading-overlay');
     
-    // Seletores para o modal de confirmação
     const confirmModal = document.getElementById('confirm-modal'),
         confirmModalCloseBtn = document.getElementById('confirm-modal-close-btn'),
         confirmModalMessage = document.getElementById('confirm-modal-message'),
@@ -72,21 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const showLoader = () => loadingOverlay.classList.remove('hidden');
     const hideLoader = () => loadingOverlay.classList.add('hidden');
 
-    // Função para abrir e gerenciar o modal de confirmação
     const openConfirmModal = (message, onConfirm) => {
         confirmModalMessage.textContent = message;
         confirmModal.classList.remove('hidden');
 
-        // Busca a referência ATUAL dos botões que estão na página
         const currentConfirmBtn = document.getElementById('confirm-modal-confirm-btn');
-        const newConfirmBtn = currentConfirmBtn.cloneNode(true); // Clona para remover eventos antigos
-        currentConfirmBtn.parentNode.replaceChild(newConfirmBtn, currentConfirmBtn); // Substitui no DOM
+        const newConfirmBtn = currentConfirmBtn.cloneNode(true); 
+        currentConfirmBtn.parentNode.replaceChild(newConfirmBtn, currentConfirmBtn);
 
         const currentCancelBtn = document.getElementById('confirm-modal-cancel-btn');
         const newCancelBtn = currentCancelBtn.cloneNode(true);
         currentCancelBtn.parentNode.replaceChild(newCancelBtn, currentCancelBtn);
 
-        // Adiciona os novos eventos aos botões que acabaram de ser inseridos na página
         newConfirmBtn.addEventListener('click', () => {
             confirmModal.classList.add('hidden');
             onConfirm();
@@ -97,30 +94,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const setUserSession = (user) => {
+    // <<<< ATUALIZADO: para salvar o token também
+    const setUserSession = (user, token) => {
         currentUser = user;
+        authToken = token;
         sessionStorage.setItem('currentUser', JSON.stringify(user));
+        sessionStorage.setItem('authToken', token);
         welcomeMessage.textContent = `Olá, ${user.nome.split(' ')[0]}!`;
-        if (currentUser.perfilId) loadDashboard();
-        else switchView('questionario');
+        // Após login/registro, precisamos buscar os dados completos do usuário para saber se ele tem perfil ou não
+        loadInitialUserData(); 
     };
 
     const clearUserSession = () => {
-        currentUser = allProducts = userCarteira = null;
+        currentUser = authToken = allProducts = userCarteira = null;
         sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('authToken'); // <<<< Limpa o token
         switchView('login');
     };
 
-    // --- FUNÇÕES DE RENDERIZAÇÃO ---
+    // --- FUNÇÕES DE RENDERIZAÇÃO (sem grandes mudanças aqui) ---
+    // (O restante das funções de renderização permanece o mesmo)
     const renderDashboardHeader = (user, recomendacaoData) => {
         dashboardHeader.innerHTML = `<div class="profile-info"><h1>Seu Dashboard <span class="profile-badge">${recomendacaoData.perfilInvestidor}</span></h1></div><div class="account-balance"><span>Saldo em conta</span><div class="saldo">${formatCurrency(user.saldo)}</div><button id="deposit-btn" class="form-button secondary">Depositar</button></div>`;
         document.getElementById('deposit-btn').addEventListener('click', () => depositModal.classList.remove('hidden'));
     };
-
     const renderRecomendacao = (recomendacaoData) => {
         recomendacaoContainer.innerHTML = recomendacaoData.carteiraRecomendada.map(item => `<div class="recomendacao-card"><div><h4>${item.nome}</h4><p class="info">Tipo: ${item.tipo} | Risco: ${item.risco}</p></div><div class="percentual">${item.percentualAlocacao}%</div></div>`).join('');
     };
-
     const renderCarteira = () => {
         if (!userCarteira || userCarteira.ativos.length === 0) {
             carteiraContainer.innerHTML = `<div class="carteira-placeholder">Você ainda não possui ativos.</div>`;
@@ -144,45 +144,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         renderCarteiraChart();
     };
-
     const renderCarteiraChart = () => {
-        if (carteiraChartInstance) {
-            carteiraChartInstance.destroy();
-        }
-
+        if (carteiraChartInstance) { carteiraChartInstance.destroy(); }
         const chartContainer = document.querySelector('.chart-container');
         if (!userCarteira || userCarteira.ativos.length === 0) {
             chartContainer.classList.add('hidden');
             return;
         }
-        
         chartContainer.classList.remove('hidden');
-
         carteiraChartInstance = new Chart(carteiraChartCanvas, {
             type: 'pie',
-            data: {
-                labels: userCarteira.ativos.map(a => a.nome),
-                datasets: [{
-                    data: userCarteira.ativos.map(a => a.valorTotal),
-                    backgroundColor: ['#4a6cf7', '#13c296', '#fd7e14', '#dc3545', '#6f42c1', '#20c997', '#0dcaf0', '#ffc107'],
-                    borderColor: '#ffffff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => `${context.label}: ${formatCurrency(context.parsed)}`
-                        }
-                    }
-                }
-            }
+            data: { labels: userCarteira.ativos.map(a => a.nome), datasets: [{ data: userCarteira.ativos.map(a => a.valorTotal), backgroundColor: ['#4a6cf7', '#13c296', '#fd7e14', '#dc3545', '#6f42c1', '#20c997', '#0dcaf0', '#ffc107'], borderColor: '#ffffff', borderWidth: 2 }] },
+            options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.label}: ${formatCurrency(context.parsed)}` } } } }
         });
     };
-
     const renderMarketplace = (riskFilter) => {
         const products = riskFilter === 'todos' ? allProducts : allProducts.filter(p => p.risco.toLowerCase() === riskFilter.toLowerCase());
         marketplaceGrid.innerHTML = products.map(p => `
@@ -191,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="details"><span>${p.tipo}</span><span class="risk-badge ${p.risco.toLowerCase()}">${p.risco}</span></div>
             </div>`).join('');
     };
-
     const openBuyModal = (productId) => {
         const product = allProducts.find(p => p.id == productId);
         if (!product) return;
@@ -201,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('buy-form').addEventListener('submit', (e) => { e.preventDefault(); handleCompra(product.id, parseFloat(quantityInput.value), e.submitter); });
         buyModal.classList.remove('hidden');
     };
-    
     const openSellModal = (productId) => {
         const ativo = userCarteira.ativos.find(a => a.produtoId == productId);
         if (!ativo) return;
@@ -213,14 +186,31 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- FUNÇÕES DE API ---
+    // <<<< ATUALIZADO: para enviar o token JWT e tratar erros 401
     const apiCall = async (endpoint, options = {}, buttonElement = null) => {
         showLoader();
         if (buttonElement) buttonElement.disabled = true;
 
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        // Adiciona o token de autorização a todas as chamadas, exceto para login e registro
+        if (authToken && !endpoint.startsWith('/auth')) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+
         try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+            
+            // Se a resposta for 401 (Não Autorizado), desloga o usuário
+            if (response.status === 401) {
+                showAlert('Sua sessão expirou. Por favor, faça login novamente.');
+                clearUserSession();
+                throw new Error('Não autorizado');
+            }
+            
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Ocorreu um erro na requisição.');
+            if (!response.ok) {
+                throw new Error(data.message || 'Ocorreu um erro na requisição.');
+            }
             return data;
         } finally {
             hideLoader();
@@ -230,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadDashboard = async () => {
         try {
+            // Agora o currentUser já tem o saldo, buscado no loadInitialUserData
             const [recomendacaoData, productsData, carteiraData] = await Promise.all([
                 apiCall(`/clientes/${currentUser.id}/recomendacoes`),
                 apiCall(`/investimentos`),
@@ -237,67 +228,90 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
             allProducts = productsData;
             userCarteira = carteiraData;
-            currentRecomendacao = recomendacaoData.carteiraRecomendada.map(item => ({...item, produtoId: allProducts.find(p => p.nome === item.nome)?.id })); // Guarda a recomendação com IDs
+            currentRecomendacao = recomendacaoData.carteiraRecomendada.map(item => ({...item, produtoId: allProducts.find(p => p.nome === item.nome)?.id }));
+            
             renderDashboardHeader(currentUser, recomendacaoData);
             renderRecomendacao(recomendacaoData);
             renderMarketplace('todos');
             renderCarteira();
             switchView('dashboard');
-        } catch (error) { showAlert(error.message); }
+        } catch (error) { if (error.message !== 'Não autorizado') showAlert(error.message); }
+    };
+    
+    // <<<< NOVO: busca os dados completos do usuário após o login
+    const loadInitialUserData = async () => {
+        try {
+            // Pega os dados completos, incluindo saldo e perfilId
+            const userDetails = await apiCall(`/clientes/${currentUser.id}`);
+            currentUser = userDetails; // Atualiza o currentUser com todos os dados
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser)); // Atualiza o storage
+            
+            if (currentUser.perfilId) {
+                loadDashboard();
+            } else {
+                switchView('questionario');
+            }
+        } catch (error) { if (error.message !== 'Não autorizado') showAlert(error.message); }
     };
 
-    const handleLogin = async (email, button) => {
+    // <<<< REFEITO: para usar o endpoint /auth/login
+    const handleLogin = async (email, senha, button) => {
         try {
-            const clientes = await apiCall('/clientes', {}, button);
-            const user = clientes.find(c => c.email.toLowerCase() === email.toLowerCase());
-            if (user) setUserSession(await apiCall(`/clientes/${user.id}`, {}, button));
-            else showAlert('E-mail não encontrado. Por favor, cadastre-se.');
+            const data = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, senha })
+            }, button);
+            setUserSession(data.cliente, data.token);
         } catch (error) { showAlert(error.message); }
     };
     
-    const handleRegister = async (nome, email, button) => {
+    // <<<< REFEITO: para usar o endpoint /auth/register
+    const handleRegister = async (nome, email, senha, button) => {
         try { 
-            setUserSession(await apiCall('/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, email }) }, button));
+            await apiCall('/auth/register', { 
+                method: 'POST', 
+                body: JSON.stringify({ nome, email, senha }) 
+            }, button);
+            // Após registrar com sucesso, faz o login automaticamente
+            showAlert('Cadastro realizado com sucesso! Fazendo login...', 'success');
+            await handleLogin(email, senha, button);
         } catch (error) { showAlert(error.message); }
     };
 
     const handleQuestionario = async (respostas, button) => {
         try {
-            const perfil = await apiCall(`/clientes/${currentUser.id}/perfil`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respostas }) }, button);
-            currentUser.perfilId = perfil.id;
-            loadDashboard();
+            const perfil = await apiCall(`/clientes/${currentUser.id}/perfil`, { method: 'POST', body: JSON.stringify({ respostas }) }, button);
+            currentUser.perfilId = perfil.id; // Atualiza localmente
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser)); // Atualiza no storage
+            loadDashboard(); // Carrega o dashboard com o novo perfil
         } catch (error) { showAlert(error.message); }
     };
 
     const handleDeposito = async (valor, button) => {
         try {
-            currentUser = await apiCall(`/clientes/${currentUser.id}/depositar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ valor }) }, button);
+            currentUser = await apiCall(`/clientes/${currentUser.id}/depositar`, { method: 'POST', body: JSON.stringify({ valor }) }, button);
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Depósito realizado com sucesso!', 'success');
             depositModal.classList.add('hidden');
-            loadDashboard();
+            await loadInitialUserData(); // Recarrega os dados para atualizar o saldo no dashboard
         } catch (error) { showAlert(error.message); }
     };
 
     const handleCompra = async (produtoId, quantidade, button) => {
         try {
-            await apiCall(`/clientes/${currentUser.id}/carteira/comprar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) }, button);
-            currentUser = await apiCall(`/clientes/${currentUser.id}`);
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            await apiCall(`/clientes/${currentUser.id}/carteira/comprar`, { method: 'POST', body: JSON.stringify({ produtoId, quantidade }) }, button);
             showAlert('Compra realizada com sucesso!', 'success');
             buyModal.classList.add('hidden');
-            loadDashboard();
+            await loadInitialUserData(); // Recarrega tudo para atualizar saldo e carteira
         } catch (error) { showAlert(error.message); }
     };
     
     const handleVenda = async (produtoId, quantidade, button) => {
         try {
-            await apiCall(`/clientes/${currentUser.id}/carteira/vender`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produtoId, quantidade }) }, button);
-            currentUser = await apiCall(`/clientes/${currentUser.id}`);
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            await apiCall(`/clientes/${currentUser.id}/carteira/vender`, { method: 'POST', body: JSON.stringify({ produtoId, quantidade }) }, button);
             showAlert('Venda realizada com sucesso!', 'success');
             sellModal.classList.add('hidden');
-            loadDashboard();
+            await loadInitialUserData(); // Recarrega tudo para atualizar saldo e carteira
         } catch (error) { showAlert(error.message); }
     };
     
@@ -311,35 +325,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            // Envia a recomendação guardada no corpo da requisição
             await apiCall(`/clientes/${currentUser.id}/recomendacoes/investir`, { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ carteiraRecomendada: currentRecomendacao }) 
             }, button);
-            
-            currentUser = await apiCall(`/clientes/${currentUser.id}`);
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             showAlert('Investimento na carteira recomendada realizado com sucesso!', 'success');
-            loadDashboard();
+            await loadInitialUserData();
         } catch (error) { showAlert(error.message); }
     };
 
     const handleRecalcularRecomendacao = async (button) => {
         try {
             const recomendacaoData = await apiCall(`/clientes/${currentUser.id}/recomendacoes`, {}, button);
-            // Atualiza a recomendação guardada, adicionando o ID do produto
             currentRecomendacao = recomendacaoData.carteiraRecomendada.map(item => ({...item, produtoId: allProducts.find(p => p.nome === item.nome)?.id }));
             renderRecomendacao(recomendacaoData);
             showAlert('Novas recomendações geradas!', 'success');
-        } catch (error) {
-            showAlert(error.message);
-        }
+        } catch (error) { showAlert(error.message); }
     };
 
     // --- EVENT LISTENERS ---
-    forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value, e.submitter); });
-    forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value, e.submitter); });
+    // <<<< ATUALIZADOS: para pegar o valor da senha
+    forms.login.addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.elements['login-email'].value, e.target.elements['login-senha'].value, e.submitter); });
+    forms.register.addEventListener('submit', (e) => { e.preventDefault(); handleRegister(e.target.elements['register-nome'].value, e.target.elements['register-email'].value, e.target.elements['register-senha'].value, e.submitter); });
+
     forms.questionario.addEventListener('submit', (e) => { e.preventDefault(); handleQuestionario(Object.fromEntries(new FormData(e.target).entries()), e.submitter); });
     forms.deposit.addEventListener('submit', (e) => { e.preventDefault(); handleDeposito(parseFloat(e.target.elements['deposit-amount'].value), e.submitter); });
     logoutButton.addEventListener('click', clearUserSession);
@@ -351,37 +359,40 @@ document.addEventListener('DOMContentLoaded', () => {
     carteiraContainer.addEventListener('click', (e) => { 
         const sellBtn = e.target.closest('.sell-btn');
         const sellAllBtn = e.target.closest('.sell-all-btn');
-
         if (sellBtn) {
             openSellModal(sellBtn.dataset.productId);
         } else if (sellAllBtn) {
             const productId = sellAllBtn.dataset.productId;
             const ativo = userCarteira.ativos.find(a => a.produtoId == productId);
             if (ativo) {
-                // Chama o modal de confirmação
-                openConfirmModal(
-                    `Tem certeza que deseja vender todas as ${ativo.quantidade.toFixed(4)} cotas de ${ativo.nome}?`,
-                    () => {
-                        // Esta função será executada apenas se o usuário clicar em "Confirmar"
-                        handleVenda(ativo.produtoId, ativo.quantidade, sellAllBtn);
-                    }
-                );
+                openConfirmModal(`Tem certeza que deseja vender todas as ${ativo.quantidade.toFixed(4)} cotas de ${ativo.nome}?`, () => { handleVenda(ativo.produtoId, ativo.quantidade, sellAllBtn); });
             }
         }
     });
 
-    [buyModal, depositModal, sellModal, confirmModal].forEach(modal => { 
-        modal.addEventListener('click', (e) => { 
-            if (e.target === modal) modal.classList.add('hidden'); 
-        }); 
-    });
-    [buyModalCloseBtn, depositModalCloseBtn, sellModalCloseBtn, confirmModalCloseBtn].forEach(btn => {
-        btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
-    });
+    [buyModal, depositModal, sellModal, confirmModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); }); });
+    [buyModalCloseBtn, depositModalCloseBtn, sellModalCloseBtn, confirmModalCloseBtn].forEach(btn => { btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden')); });
     investirRecomendacaoBtn.addEventListener('click', (e) => handleInvestirRecomendacao(e.currentTarget));
     recalcularRecomendacaoBtn.addEventListener('click', (e) => handleRecalcularRecomendacao(e.currentTarget));
 
     // --- INICIALIZAÇÃO ---
-    const init = () => { if (sessionStorage.getItem('currentUser')) setUserSession(JSON.parse(sessionStorage.getItem('currentUser'))); else switchView('login'); };
+    // <<<< ATUALIZADO: para restaurar a sessão a partir do token e do usuário
+    const init = () => {
+        const storedUser = sessionStorage.getItem('currentUser');
+        const storedToken = sessionStorage.getItem('authToken');
+        if (storedUser && storedToken) {
+            currentUser = JSON.parse(storedUser);
+            authToken = storedToken;
+            welcomeMessage.textContent = `Olá, ${currentUser.nome.split(' ')[0]}!`;
+            // Se o usuário já estava logado, verifica se ele tem perfil ou não
+            if (currentUser.perfilId) {
+                loadDashboard();
+            } else {
+                switchView('questionario');
+            }
+        } else {
+            switchView('login');
+        }
+    };
     init();
 });
