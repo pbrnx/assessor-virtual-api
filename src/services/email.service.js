@@ -1,15 +1,14 @@
 // src/services/email.service.js
 const nodemailer = require('nodemailer');
 
-// --- [CONFIGURAÇÃO ATUALIZADA PARA GMAIL] ---
-// O 'transporter' agora usa o SMTP do Gmail com as credenciais do .env
+// --- [CONFIGURAÇÃO ATUALIZADA PARA PORTA 587] ---
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: true, // true para a porta 465, false para outras portas
+    port: process.env.EMAIL_PORT, // Deve ser 587 a partir do .env
+    secure: false,
     auth: {
-        user: process.env.EMAIL_USER, // Seu e-mail do Gmail
-        pass: process.env.EMAIL_PASS, // A Senha de App de 16 letras
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -22,7 +21,7 @@ async function sendPasswordResetEmail(to, token) {
     const resetLink = `https://assessor-virtual-api.onrender.com/?token=${token}&action=resetPassword`;
 
     const mailOptions = {
-        from: process.env.EMAIL_FROM, // Ex: "Assessor Virtual" <seu-email@gmail.com>
+        from: process.env.EMAIL_FROM,
         to: to,
         subject: 'Redefinição de Senha - Assessor Virtual',
         text: `Olá,\n\nPara redefinir sua senha, por favor, acesse o seguinte link (válido por 1 hora): ${resetLink}\n\nAtenciosamente,\nEquipe Assessor Virtual`,
@@ -45,7 +44,7 @@ async function sendPasswordResetEmail(to, token) {
         await transporter.sendMail(mailOptions);
         console.log('E-mail de redefinição de senha enviado para:', to);
     } catch (error) {
-        console.error('Erro ao enviar e-mail de redefinição:', error);
+        console.error('Erro detalhado ao enviar e-mail de redefinição:', error);
         throw new Error('Não foi possível enviar o e-mail de redefinição de senha.');
     }
 }
@@ -80,7 +79,7 @@ async function sendAccountVerificationEmail(to, token) {
         await transporter.sendMail(mailOptions);
         console.log('E-mail de verificação de conta enviado para:', to);
     } catch (error) {
-        console.error('Erro ao enviar e-mail de verificação:', error);
+        console.error('Erro detalhado ao enviar e-mail de verificação:', error);
         throw new Error('Não foi possível enviar o e-mail de verificação.');
     }
 }
