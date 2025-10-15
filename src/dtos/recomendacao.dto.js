@@ -5,7 +5,7 @@
  */
 class ProdutoRecomendadoDTO {
     constructor(produtoModel, percentual) {
-        this.produtoId = produtoModel.id; // <-- CORREÇÃO: Adicionamos o ID do produto aqui
+        this.produtoId = produtoModel.id; // <<<< ADICIONADO >>>>
         this.nome = produtoModel.nome;
         this.tipo = produtoModel.tipo;
         this.risco = produtoModel.risco;

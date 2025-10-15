@@ -120,7 +120,7 @@ Siga os passos abaixo para rodar o projeto localmente.
             END IF;
     END;
     /
-
+        
     -- Tabela para armazenar os tipos de perfil de investidor
     CREATE TABLE investimento_perfil (
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -129,11 +129,13 @@ Siga os passos abaixo para rodar o projeto localmente.
         CONSTRAINT uq_investimento_perfil_nome UNIQUE (nome)
     );
 
-    -- Tabela para armazenar os dados dos clientes com o novo campo de SALDO
+    -- Tabela de clientes com o novo campo EMAIL_VERIFICADO
     CREATE TABLE investimento_cliente (
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         nome VARCHAR2(255) NOT NULL,
         email VARCHAR2(255) NOT NULL,
+        senha VARCHAR2(255) NOT NULL,
+        email_verificado NUMBER(1) DEFAULT 0 NOT NULL,
         saldo NUMBER(19, 2) DEFAULT 0.00 NOT NULL,
         perfil_id NUMBER(19),
         CONSTRAINT uq_investimento_cliente_email UNIQUE (email),
@@ -142,7 +144,7 @@ Siga os passos abaixo para rodar o projeto localmente.
             ON DELETE SET NULL
     );
 
-    -- Tabela para o catálogo de produtos de investimento com o novo campo de PREÇO
+    -- Tabela para o catálogo de produtos de investimento
     CREATE TABLE investimento_produto (
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         nome VARCHAR2(255) NOT NULL,
@@ -157,7 +159,7 @@ Siga os passos abaixo para rodar o projeto localmente.
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         cliente_id NUMBER(19) NOT NULL,
         produto_id NUMBER(19) NOT NULL,
-        quantidade NUMBER(19, 4) NOT NULL,
+        quantidade NUMBER(19, 8) NOT NULL, -- <<<<<<< CORREÇÃO APLICADA AQUI
         CONSTRAINT fk_carteira_cliente FOREIGN KEY (cliente_id) REFERENCES investimento_cliente(id) ON DELETE CASCADE,
         CONSTRAINT fk_carteira_produto FOREIGN KEY (produto_id) REFERENCES investimento_produto(id) ON DELETE CASCADE,
         CONSTRAINT uq_carteira_cliente_produto UNIQUE (cliente_id, produto_id)

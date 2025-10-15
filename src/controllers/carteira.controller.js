@@ -6,7 +6,7 @@ class CarteiraController {
 
     async getCarteira(req, res, next) {
         try {
-            const clienteId = req.params.id; // O ID vem da rota /clientes/:id/carteira
+            const clienteId = req.params.id;
             const carteiraItens = await carteiraService.getCarteiraByClienteId(clienteId);
             const carteiraResponse = new CarteiraResponseDTO(carteiraItens);
             res.status(200).json(carteiraResponse);
@@ -16,20 +16,25 @@ class CarteiraController {
         }
     }
 
+    // --- SUBSTITUA ESTA FUNÇÃO INTEIRA ---
     async comprar(req, res, next) {
+        console.log('CORPO DA REQUISIÇÃO RECEBIDO:', req.body); // O log pode ser mantido ou removido
+
         try {
             const clienteId = req.params.id;
-            const compraRequest = new CompraRequestDTO(req.body);
+            // [MUDANÇA] Extraímos os dados diretamente do req.body
+            const { produtoId, quantidade } = req.body;
 
-            // --- MUDANÇA: Validação de 'valor' em vez de 'quantidade' ---
-            if (!compraRequest.produtoId || !compraRequest.valor) {
-                return res.status(400).json({ message: 'produtoId e valor são obrigatórios.' });
+            // [MUDANÇA] A validação agora usa as variáveis locais
+            if (!produtoId || !quantidade) {
+                // Esta mensagem de erro não deve mais aparecer
+                return res.status(400).json({ message: 'produtoId e quantidade são obrigatórios.' });
             }
 
             const carteiraAtualizada = await carteiraService.comprarAtivo(
                 clienteId,
-                compraRequest.produtoId,
-                compraRequest.valor // Passando o valor para o service
+                produtoId,     // Passa a variável diretamente
+                quantidade     // Passa a variável diretamente
             );
             
             const carteiraResponse = new CarteiraResponseDTO(carteiraAtualizada);
@@ -42,7 +47,6 @@ class CarteiraController {
         }
     }
 
-    // Dentro da classe CarteiraController, adicione este método
     async vender(req, res, next) {
         try {
             const clienteId = req.params.id;
@@ -68,4 +72,4 @@ class CarteiraController {
     }
 }
 
-module.exports = new CarteiraController();  
+module.exports = new CarteiraController();

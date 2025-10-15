@@ -1,17 +1,18 @@
 // static/app.js
 
 import { apiCall } from './services/api.js';
-import {
-    initState, setSession, clearSession, getCurrentUser, getUserRole,
-    updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira
+import { 
+    initState, setSession, clearSession, getCurrentUser, 
+    updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira,
+    setUserRecomendacao, getUserRecomendacao 
 } from './services/state.js';
-import {
+import { 
     switchView, showAlert, renderWelcomeMessage, renderDashboardHeader,
     renderRecomendacao, renderCarteira, renderMarketplace,
-    getElements, openBuyModal, openSellModal, openConfirmModal, closeModal
+    getElements, openBuyModal, openSellModal, openConfirmModal, closeModal, formatCurrency
 } from './services/ui.js';
 
-let currentRecomendacao = null;
+let actionToken = null;
 
 // --- HANDLERS (lógica de negócio do frontend) ---
 
@@ -22,7 +23,7 @@ async function handleLogin(event) {
     const senha = event.target.elements['login-senha'].value;
     try {
         const data = await apiCall('/auth/login', { method: 'POST', body: JSON.stringify({ email, senha }) }, button);
-        setSession(data.cliente, data.token, data.role);
+        setSession(data.cliente, data.token);
         await initializeUserFlow();
     } catch (error) {
         showAlert(error.message, 'error');
@@ -61,19 +62,18 @@ async function handleResetPassword(event) {
     event.preventDefault();
     const button = event.submitter;
     const novaSenha = event.target.elements['reset-senha'].value;
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    const token = actionToken;
     try {
         const data = await apiCall('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, novaSenha }) }, button);
         showAlert(data.message, 'success');
-        window.history.replaceState({}, document.title, window.location.pathname);
         switchView('login');
     } catch (error) {
         showAlert(error.message, 'error');
     }
 }
 
-async function handleVerifyEmail(token) {
+async function handleVerifyEmail() {
+    const token = actionToken;
     try {
         showAlert('Verificando sua conta...', 'success');
         const data = await apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) });
@@ -81,7 +81,6 @@ async function handleVerifyEmail(token) {
     } catch (error) {
         showAlert(error.message, 'error');
     } finally {
-        window.history.replaceState({}, document.title, window.location.pathname);
         switchView('login');
     }
 }
@@ -102,23 +101,55 @@ async function handleQuestionario(event) {
     }
 }
 
-// --- MUDANÇA FINAL AQUI ---
-async function handleCompra(produtoId, valor, button) { // Recebe 'valor'
+async function handleCompra(produtoId, quantidade, button) {
+    // <<<< CORRIGIDO: Validação mais robusta dos dados antes de enviar >>>>
+    const idNum = Number(produtoId);
+    const qtdNum = Number(quantidade);
+
+    if (isNaN(idNum) || idNum <= 0) {
+        showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error');
+        return;
+    }
+    if (isNaN(qtdNum) || qtdNum <= 0) {
+        showAlert('A quantidade para compra deve ser um número positivo.', 'error');
+        return;
+    }
+
+    const payload = { produtoId: idNum, quantidade: qtdNum };
+
     try {
-        // Envia 'valor' no corpo da requisição
-        await apiCall(`/clientes/${getCurrentUser().id}/carteira/comprar`, { method: 'POST', body: JSON.stringify({ produtoId, valor }) }, button);
+        await apiCall(`/clientes/${getCurrentUser().id}/carteira/comprar`, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        }, button);
         showAlert('Compra realizada com sucesso!');
         closeModal('buy');
-        await initializeUserFlow(); // Recarrega os dados
+        await initializeUserFlow();
     } catch (error) {
         showAlert(error.message, 'error');
     }
 }
-// --- FIM DA MUDANÇA ---
 
 async function handleVenda(produtoId, quantidade, button) {
+    const idNum = Number(produtoId);
+    const qtdNum = Number(quantidade);
+
+    if (isNaN(idNum) || idNum <= 0) {
+        showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error');
+        return;
+    }
+    if (isNaN(qtdNum) || qtdNum <= 0) {
+        showAlert('A quantidade para venda deve ser um número positivo.', 'error');
+        return;
+    }
+    
+    const payload = { produtoId: idNum, quantidade: qtdNum };
+
     try {
-        await apiCall(`/clientes/${getCurrentUser().id}/carteira/vender`, { method: 'POST', body: JSON.stringify({ produtoId, quantidade }) }, button);
+        await apiCall(`/clientes/${getCurrentUser().id}/carteira/vender`, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        }, button);
         showAlert('Venda realizada com sucesso!');
         closeModal('sell');
         closeModal('confirm');
@@ -132,6 +163,10 @@ async function handleDeposito(event) {
     event.preventDefault();
     const button = event.submitter;
     const valor = parseFloat(event.target.elements['deposit-amount'].value);
+    if (!valor || valor <= 0) {
+        showAlert('Por favor, insira um valor de depósito válido.', 'error');
+        return;
+    }
     try {
         await apiCall(`/clientes/${getCurrentUser().id}/depositar`, { method: 'POST', body: JSON.stringify({ valor }) }, button);
         showAlert('Depósito realizado com sucesso!');
@@ -142,31 +177,32 @@ async function handleDeposito(event) {
     }
 }
 
-async function handleInvestirRecomendacao() {
-    if (!currentRecomendacao) {
-        showAlert('Não há recomendação para investir.', 'error');
+async function handleInvestirRecomendacao(event) {
+    const button = event.target;
+    const user = getCurrentUser();
+    const recomendacao = getUserRecomendacao();
+
+    if (!recomendacao || !recomendacao.carteiraRecomendada || recomendacao.carteiraRecomendada.length === 0) {
+        showAlert('Não foi possível encontrar a carteira recomendada para investir.', 'error');
         return;
     }
-    const user = getCurrentUser();
-    if (user.saldo <= 0) {
+    
+    if (!user.saldo || user.saldo <= 0) {
         showAlert('Você não tem saldo suficiente para investir.', 'error');
         return;
     }
+
     openConfirmModal(
-        `Tem certeza que deseja investir todo o seu saldo de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(user.saldo)} na carteira recomendada?`,
+        `Tem certeza que deseja investir todo o seu saldo de ${formatCurrency(user.saldo)} na carteira recomendada?`,
         async () => {
-            const button = getElements().dashboard.investirRecomendacaoBtn;
             try {
-                await apiCall(
-                    `/clientes/${user.id}/recomendacoes/investir`,
-                    {
-                        method: 'POST',
-                        body: JSON.stringify({ carteiraRecomendada: currentRecomendacao.carteiraRecomendada })
-                    },
-                    button
-                );
+                const payload = { carteiraRecomendada: recomendacao.carteiraRecomendada };
+                await apiCall(`/clientes/${user.id}/recomendacoes/investir`, { 
+                    method: 'POST', 
+                    body: JSON.stringify(payload) 
+                }, button);
                 showAlert('Investimento realizado com sucesso!', 'success');
-                await loadDashboard();
+                await initializeUserFlow();
             } catch (error) {
                 showAlert(error.message, 'error');
             }
@@ -174,23 +210,25 @@ async function handleInvestirRecomendacao() {
     );
 }
 
-function handleRecalcularRecomendacao() {
+async function handleRecalcularRecomendacao(event) {
     switchView('questionario');
 }
 
 async function loadDashboard() {
     const user = getCurrentUser();
     try {
-        const userDetails = await apiCall(`/clientes/${user.id}`);
-        updateCurrentUser(userDetails);
-        const [recomendacaoData, produtosData, carteiraData] = await Promise.all([
-            apiCall(`/clientes/${userDetails.id}/recomendacoes`),
+        const [userDetails, recomendacaoData, produtosData, carteiraData] = await Promise.all([
+            apiCall(`/clientes/${user.id}`),
+            apiCall(`/clientes/${user.id}/recomendacoes`),
             apiCall('/investimentos'),
-            apiCall(`/clientes/${userDetails.id}/carteira`),
+            apiCall(`/clientes/${user.id}/carteira`),
         ]);
-        currentRecomendacao = recomendacaoData;
+
+        updateCurrentUser(userDetails);
         setAllProducts(produtosData);
         setUserCarteira(carteiraData);
+        setUserRecomendacao(recomendacaoData);
+        
         renderDashboardHeader(userDetails, recomendacaoData);
         renderRecomendacao(recomendacaoData);
         renderCarteira(carteiraData);
@@ -203,20 +241,21 @@ async function loadDashboard() {
 
 function setupEventListeners() {
     const elements = getElements();
+
     elements.forms.login.addEventListener('submit', handleLogin);
     elements.forms.register.addEventListener('submit', handleRegister);
     elements.forms.forgotPassword.addEventListener('submit', handleForgotPassword);
     elements.forms.resetPassword.addEventListener('submit', handleResetPassword);
     elements.forms.questionario.addEventListener('submit', handleQuestionario);
     elements.forms.deposit.addEventListener('submit', handleDeposito);
+
     elements.links.showRegister.addEventListener('click', (e) => { e.preventDefault(); switchView('register'); });
     elements.links.showLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); });
     elements.links.showForgotPassword.addEventListener('click', (e) => { e.preventDefault(); switchView('forgotPassword'); });
     elements.links.backToLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); });
-    elements.userSession.logoutButton.addEventListener('click', () => {
-        clearSession();
-        window.location.reload();
-    });
+
+    elements.userSession.logoutButton.addEventListener('click', () => { clearSession(); switchView('login'); });
+
     elements.dashboard.marketplaceFilters.addEventListener('click', (e) => {
         if (e.target.matches('.filter-btn')) {
             document.querySelector('.filter-btn.active').classList.remove('active');
@@ -224,19 +263,22 @@ function setupEventListeners() {
             renderMarketplace(getAllProducts(), e.target.dataset.risk);
         }
     });
+
     elements.dashboard.marketplaceGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.product-card');
-        if (card && getUserRole() === 'cliente') {
+        if (card) {
             const productId = parseInt(card.dataset.productId, 10);
             const product = getAllProducts().find(p => p.id === productId);
             if (product) openBuyModal(product, getCurrentUser(), handleCompra);
         }
     });
+
     elements.dashboard.carteiraContainer.addEventListener('click', (e) => {
         const sellBtn = e.target.closest('.sell-btn');
         const sellAllBtn = e.target.closest('.sell-all-btn');
         const carteira = getUserCarteira();
         if (!carteira) return;
+
         if (sellBtn) {
             const productId = parseInt(sellBtn.dataset.productId, 10);
             const ativo = carteira.ativos.find(a => a.produtoId === productId);
@@ -252,8 +294,10 @@ function setupEventListeners() {
             }
         }
     });
+    
     elements.dashboard.investirRecomendacaoBtn.addEventListener('click', handleInvestirRecomendacao);
     elements.dashboard.recalcularRecomendacaoBtn.addEventListener('click', handleRecalcularRecomendacao);
+
     Object.values(elements.modals).forEach(modal => {
         if (modal.overlay) modal.overlay.addEventListener('click', (e) => { if (e.target === modal.overlay) closeModal(modal.overlay.id.split('-')[0]); });
         if (modal.closeBtn) modal.closeBtn.addEventListener('click', () => closeModal(modal.overlay.id.split('-')[0]));
@@ -262,33 +306,12 @@ function setupEventListeners() {
 
 async function initializeUserFlow() {
     const user = getCurrentUser();
-    const role = getUserRole();
     if (!user) {
         switchView('login');
         return;
     }
     renderWelcomeMessage(user.nome);
-    if (role === 'admin') {
-        try {
-            const elements = getElements();
-            const produtosData = await apiCall('/investimentos');
-            setAllProducts(produtosData);
-            elements.dashboard.header.innerHTML = `<div class="profile-info"><h1>Painel do Administrador</h1></div>`;
-            elements.dashboard.recomendacaoContainer.parentElement.style.display = 'none';
-            elements.dashboard.carteiraContainer.closest('.sidebar').style.display = 'none';
-            document.querySelector('.main-content').style.gridTemplateColumns = '1fr';
-            renderMarketplace(produtosData);
-            switchView('dashboard');
-        } catch (error) {
-            if (error.message !== 'Não autorizado') showAlert(error.message, 'error');
-        }
-        return;
-    }
     try {
-        const elements = getElements();
-        elements.dashboard.recomendacaoContainer.parentElement.style.display = 'block';
-        elements.dashboard.carteiraContainer.closest('.sidebar').style.display = 'block';
-        document.querySelector('.main-content').style.gridTemplateColumns = '';
         const userDetails = await apiCall(`/clientes/${user.id}`);
         updateCurrentUser(userDetails);
         if (userDetails.perfilId) {
@@ -297,7 +320,9 @@ async function initializeUserFlow() {
             switchView('questionario');
         }
     } catch (error) {
-        if (error.message !== 'Não autorizado') showAlert(error.message, 'error');
+        if (error.message !== 'Não autorizado') {
+            showAlert(error.message, 'error');
+        }
     }
 }
 
@@ -305,13 +330,18 @@ async function handleUrlActions() {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const action = urlParams.get('action');
+    
     if (!token || !action) return false;
+
+    actionToken = token;
+    window.history.replaceState({}, document.title, window.location.pathname);
+
     if (action === 'resetPassword') {
         switchView('resetPassword');
         return true;
     }
     if (action === 'verifyEmail') {
-        await handleVerifyEmail(token);
+        await handleVerifyEmail();
         return true;
     }
     return false;
@@ -319,12 +349,11 @@ async function handleUrlActions() {
 
 async function main() {
     const urlActionHandled = await handleUrlActions();
+    setupEventListeners();
     if (urlActionHandled) {
-        setupEventListeners();
         return;
     }
     initState();
-    setupEventListeners();
     if (getCurrentUser()) {
         await initializeUserFlow();
     } else {

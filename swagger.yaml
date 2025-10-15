@@ -9,7 +9,6 @@ servers:
   - url: http://localhost:3000/api
     description: Servidor de Desenvolvimento Local
 
-# --- NOVO: TAG para Autenticação ---
 tags:
   - name: Autenticação
     description: Operações de registro e login de usuários.
@@ -19,7 +18,7 @@ tags:
     description: Gerenciamento do catálogo de produtos de investimento.
 
 paths:
-  # --- NOVO: Rotas de Autenticação ---
+  # --- Rotas de Autenticação ---
   /auth/register:
     post:
       tags: [Autenticação]
@@ -63,7 +62,7 @@ paths:
     get:
       tags: [Clientes]
       summary: Lista todos os clientes cadastrados
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       responses:
         '200':
@@ -81,7 +80,7 @@ paths:
     get:
       tags: [Clientes]
       summary: Busca um cliente pelo seu ID
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - name: id
@@ -103,7 +102,7 @@ paths:
     put:
       tags: [Clientes]
       summary: Atualiza os dados de um cliente (exceto senha)
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - name: id
@@ -131,7 +130,7 @@ paths:
     delete:
       tags: [Clientes]
       summary: Deleta um cliente
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - name: id
@@ -152,7 +151,7 @@ paths:
     post:
       tags: [Clientes]
       summary: Define o perfil de investidor de um cliente
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ClienteId'
@@ -178,7 +177,7 @@ paths:
     get:
       tags: [Clientes]
       summary: Obtém a carteira de investimentos recomendada (sugestão)
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente.
       parameters:
@@ -199,7 +198,7 @@ paths:
     post:
       tags: [Clientes]
       summary: Investe o saldo disponível na carteira recomendada
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ClienteId'
@@ -226,7 +225,7 @@ paths:
     post:
       tags: [Clientes]
       summary: Deposita um valor na conta do cliente
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ClienteId'
@@ -254,7 +253,7 @@ paths:
     get:
       tags: [Clientes]
       summary: Busca a carteira de ativos de um cliente
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ClienteId'
@@ -269,16 +268,72 @@ paths:
           description: Não autorizado.
         '404':
           description: Cliente não encontrado.
-  
-  # ... (O restante das rotas de carteira também deveriam ser protegidas, mas omitido por brevidade)
-  # A proteção foi aplicada no router, então todas as sub-rotas já estão seguras.
+
+  # --- [CORRIGIDO] Rota para Comprar Ativo ---
+  /clientes/{id}/carteira/comprar:
+    post:
+      tags: [Clientes]
+      summary: Compra um ativo para a carteira do cliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraRequest'
+      responses:
+        '200':
+          description: Compra realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Dados da compra inválidos.
+        '401':
+          description: Não autorizado.
+        '402':
+          description: Saldo insuficiente.
+        '404':
+          description: Cliente ou produto não encontrado.
+          
+  # --- [CORRIGIDO] Rota para Vender Ativo ---
+  /clientes/{id}/carteira/vender:
+    post:
+      tags: [Clientes]
+      summary: Vende um ativo da carteira do cliente
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendaRequest'
+      responses:
+        '200':
+          description: Venda realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Quantidade de venda inválida ou insuficiente.
+        '401':
+          description: Não autorizado.
+        '404':
+          description: Cliente ou ativo na carteira não encontrado.
 
   # --- Rotas de Produtos de Investimento (CRUD) ---
   /investimentos:
     get:
       tags: [Produtos de Investimento]
       summary: Lista todos os produtos de investimento
-      # Esta rota pode ser pública, pois é um catálogo
       responses:
         '200':
           description: Sucesso.
@@ -291,7 +346,7 @@ paths:
     post:
       tags: [Produtos de Investimento]
       summary: Cria um novo produto de investimento (Ação de Admin)
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       requestBody:
         required: true
@@ -325,7 +380,7 @@ paths:
     put:
       tags: [Produtos de Investimento]
       summary: Atualiza um produto (Ação de Admin)
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProdutoId'
@@ -347,7 +402,7 @@ paths:
     delete:
       tags: [Produtos de Investimento]
       summary: Deleta um produto (Ação de Admin)
-      security: # <<<< Rota agora protegida
+      security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProdutoId'
@@ -357,9 +412,7 @@ paths:
         '404':
           description: Produto não encontrado.
 
-
 components:
-  # --- NOVO: Definição do esquema de segurança ---
   securitySchemes:
     bearerAuth:
       type: http
@@ -384,7 +437,6 @@ components:
         type: integer
 
   schemas:
-    # --- NOVOS: SCHEMAS de Autenticação ---
     RegisterRequest:
       type: object
       properties:
@@ -408,8 +460,6 @@ components:
             nome: { type: string, example: "Maria da Silva" }
             email: { type: string, example: "maria.silva@email.com" }
         token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
-
-    # --- SCHEMAS DE CLIENTE E PERFIL ---
     ClienteUpdateRequest:
       type: object
       description: "Dados para atualizar um cliente. Não inclui a senha."
@@ -425,7 +475,6 @@ components:
         email: { type: string, example: "maria.silva@email.com" }
         saldo: { type: number, format: float, example: 5000.75 }
         perfilId: { type: integer, nullable: true, example: 2 }
-    # ... (O resto dos schemas permanece igual)
     PerfilRequest:
       type: object
       properties:
@@ -441,8 +490,6 @@ components:
         id: { type: integer, example: 2 }
         nome: { type: string, example: "Moderado" }
         descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
-    
-    # --- SCHEMAS DE PRODUTOS E RECOMENDAÇÃO ---
     ProdutoInvestimento:
       type: object
       properties:
@@ -476,7 +523,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ItemRecomendado'
-
     InvestirRecomendacaoRequest:
       type: object
       properties:
@@ -484,8 +530,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ItemRecomendado'
-    
-    # --- SCHEMAS DE CARTEIRA E TRANSAÇÕES ---
     DepositoRequest:
       type: object
       properties:
