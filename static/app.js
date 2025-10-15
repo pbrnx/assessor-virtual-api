@@ -256,16 +256,27 @@ function setupEventListeners() {
 
     elements.userSession.logoutButton.addEventListener('click', () => { clearSession(); switchView('login'); });
 
+    // ADICIONADO: Listener para abrir o modal de depósito
+    // ATENÇÃO: É necessário adicionar 'depositBtn' ao objeto 'elements' no ui.js
+    const depositBtn = document.getElementById('deposit-btn');
+    if (depositBtn) {
+        depositBtn.addEventListener('click', () => {
+            closeModal('deposit'); // Fecha primeiro, para resetar o estado
+            elements.modals.deposit.overlay.classList.remove('overlay--hidden');
+        });
+    }
+
     elements.dashboard.marketplaceFilters.addEventListener('click', (e) => {
-        if (e.target.matches('.filter-btn')) {
-            document.querySelector('.filter-btn.active').classList.remove('active');
-            e.target.classList.add('active');
+        if (e.target.matches('.chip')) {
+            const activeButton = document.querySelector('.chip.chip--active');
+            if (activeButton) activeButton.classList.remove('chip--active');
+            e.target.classList.add('chip--active');
             renderMarketplace(getAllProducts(), e.target.dataset.risk);
         }
     });
 
     elements.dashboard.marketplaceGrid.addEventListener('click', (e) => {
-        const card = e.target.closest('.product-card');
+        const card = e.target.closest('.product');
         if (card) {
             const productId = parseInt(card.dataset.productId, 10);
             const product = getAllProducts().find(p => p.id === productId);
@@ -273,27 +284,20 @@ function setupEventListeners() {
         }
     });
 
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Atualizamos o seletor para procurar por '.btn--sell', que corresponde à nova classe do CSS.
     elements.dashboard.carteiraContainer.addEventListener('click', (e) => {
-        const sellBtn = e.target.closest('.sell-btn');
-        const sellAllBtn = e.target.closest('.sell-all-btn');
+        const sellBtn = e.target.closest('.btn--sell');
         const carteira = getUserCarteira();
-        if (!carteira) return;
+        if (!carteira || !sellBtn) return;
 
-        if (sellBtn) {
-            const productId = parseInt(sellBtn.dataset.productId, 10);
-            const ativo = carteira.ativos.find(a => a.produtoId === productId);
-            if (ativo) openSellModal(ativo, handleVenda);
-        } else if (sellAllBtn) {
-            const productId = parseInt(sellAllBtn.dataset.productId, 10);
-            const ativo = carteira.ativos.find(a => a.produtoId === productId);
-            if (ativo) {
-                openConfirmModal(
-                    `Tem certeza que deseja vender todas as ${ativo.quantidade.toFixed(4)} cotas de ${ativo.nome}?`,
-                    () => handleVenda(ativo.produtoId, ativo.quantidade, sellAllBtn)
-                );
-            }
+        const productId = parseInt(sellBtn.dataset.productId, 10);
+        const ativo = carteira.ativos.find(a => a.produtoId === productId);
+        if (ativo) {
+            openSellModal(ativo, handleVenda);
         }
     });
+    // --- FIM DA CORREÇÃO ---
     
     elements.dashboard.investirRecomendacaoBtn.addEventListener('click', handleInvestirRecomendacao);
     elements.dashboard.recalcularRecomendacaoBtn.addEventListener('click', handleRecalcularRecomendacao);
@@ -302,6 +306,12 @@ function setupEventListeners() {
         if (modal.overlay) modal.overlay.addEventListener('click', (e) => { if (e.target === modal.overlay) closeModal(modal.overlay.id.split('-')[0]); });
         if (modal.closeBtn) modal.closeBtn.addEventListener('click', () => closeModal(modal.overlay.id.split('-')[0]));
     });
+
+    // Adiciona listener para o botão de cancelar no modal de confirmação
+    const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => closeModal('confirm'));
+    }
 }
 
 async function initializeUserFlow() {

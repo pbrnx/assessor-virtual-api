@@ -1,7 +1,6 @@
 // static/services/api.js
 
-import { getAuthToken } from './state.js';
-import { clearSession } from './state.js';
+import { getAuthToken, clearSession } from './state.js';
 import { showAlert, showLoader, hideLoader } from './ui.js';
 
 const API_BASE_URL = '/api';

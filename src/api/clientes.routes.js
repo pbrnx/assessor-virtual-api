@@ -9,8 +9,8 @@ const authJwt = require('../middlewares/authJwt');
 
 // --- ROTAS PROTEGIDAS ---
 
-// A rota para listar todos os clientes (idealmente, deveria ser apenas para admin)
-router.get('/', [authJwt.verifyToken], clienteController.findAll);
+// A rota para listar todos os clientes (ADMIN)
+router.get('/', [authJwt.verifyToken, authJwt.isOwnerOrAdmin], clienteController.findAll);
 
 // [CORREÇÃO APLICADA] Middleware 'isOwnerOrAdmin' adicionado para proteger o acesso aos recursos do cliente.
 router.get('/:id', [authJwt.verifyToken, authJwt.isOwnerOrAdmin], clienteController.findById);

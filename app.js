@@ -15,20 +15,18 @@ database.startup().then(() => {
     const app = express();
     app.use(express.json());
 
-    // --- ROTAS DA API E DOCUMENTAÇÃO (PRIMEIRO) ---
-    // A ordem aqui é crucial. Rotas específicas primeiro.
+    // --- ROTAS DA API E DOCUMENTAÇÃO ---
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
     app.use('/api', apiRoutes);
 
-    // --- SERVIR ARQUIVOS DO FRONTEND (SEGUNDO) ---
-    // Serve a pasta 'static'
+    // --- SERVIR ARQUIVOS DO FRONTEND ---
     app.use(express.static(path.join(__dirname, 'static')));
 
     // --- ROTA "CATCH-ALL" PARA A SPA ---
-
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'static', 'index.html'));
-});
+    // CORRIGIDO: Voltamos a usar a expressão regular que é compatível com o seu router.
+    app.get(/.*/, (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'index.html'));
+    });
 
     // --- MIDDLEWARE DE ERRO (DEVE SER O ÚLTIMO) ---
     app.use(errorHandler);
@@ -42,4 +40,5 @@ app.get(/.*/, (req, res) => {
 
 }).catch(err => {
     console.error("Erro ao iniciar a aplicação:", err);
+    process.exit(1);
 });
