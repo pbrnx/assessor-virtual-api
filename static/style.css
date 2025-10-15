@@ -215,7 +215,7 @@ body{
   grid-template-columns: 1fr min(360px, 32vw);
   gap: 24px;
 }
-@media (max-width: 1024px){
+@media (max-width: 768px){
   .grid{ grid-template-columns: 1fr; }
 }
 .stack{ display:grid; gap: 24px; }
@@ -370,51 +370,87 @@ body{
   outline-offset: 2px;
 }
 
+/* Altura padrão do gráfico + versão mobile */
+:root{ --chart-h: 320px; }
 @media (max-width: 768px){
-  /* Grade do marketplace com largura mínima maior para não esmagar */
+  :root{ --chart-h: 240px; }
+}
+
+/* Canvas e elementos internos do gráfico */
+.canvas{
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.canvas canvas,
+.canvas svg,
+.canvas img{
+  display: block;
+  width: 100%;
+  height: var(--chart-h); /* controla altura sem estourar */
+}
+
+/* Breakpoint único 768 */
+@media (max-width: 768px){
+  .cards{ display:grid; gap: 14px; }
+.cards--auto{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+/* ALTERADO: Largura mínima menor para forçar múltiplas colunas */
+.cards--market{ grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  /* Layout geral e tipografia */
+  .container{ width: min(1120px, 94vw); padding: 20px 0 48px; }
+  .title{ font-size: clamp(1.25rem, 4.5vw, 1.6rem); }
+  .subtitle{ font-size: .95rem; }
+  .page{ padding-top: 14px; }
+
+  /* Header/Nav (evita corte) */
+  .nav__container{ padding: 10px 0; }
+  .brand__text{ font-size: 1rem; }
+  .session{ gap: 8px; flex-wrap: wrap; }
+
+  /* Hero */
+  .hero{ padding: 14px; margin: 12px 0 18px; }
+  .hero__title{ font-size: 1.05rem; }
+  .badge__pill{ padding: 2px 6px; font-size: .75rem; }
+
+  /* Grid principal → 1 coluna + ordem */
+  .grid{ grid-template-columns: 1fr; gap: 18px; }
+  .aside{ position: static; top: auto; height: auto; }
+  .stack{ order: 1; }  /* conteúdo principal */
+  .aside{ order: 2; }  /* gráfico; troque para order:0 se quiser primeiro */
+
+  /* Blocos e cartões */
+  .block{ padding: 14px; }
+  .block__head{ margin-bottom: 12px; }
+  .card--auth{ width: min(520px, 94vw); padding: 22px; }
+
+  /* Marketplace - evita esmagamento e desproporção */
   .cards--market{
-    display:grid;
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
   }
-
-  .product{
-    padding: 14px;
-    /* garante altura mínima consistente sem deformar conteúdo */
-    min-height: 140px;
-  }
+  .product{ padding: 14px; min-height: 140px; }
   .product__head{ margin-bottom: 8px; }
   .product__title{ font-size: 1rem; }
   .product__price{ font-size: 1.15rem; }
   .product__meta{ font-size: .9rem; }
 
-  /* Chips e filtros com melhor toque */
+  /* Filtros e botões */
   .chip{ padding: 8px 10px; font-size: .95rem; }
-}
-
-@media (max-width: 768px){
-  .form{ gap:14px; }
-  .input{
-    padding: 0.8rem 0.9rem;
-    border-radius: 10px;
-  }
-  .btn{
-    padding: 0.8rem 1rem;
-  }
+  .btn{ padding: 0.8rem 1rem; }
   .btn--pill{ border-radius: 12px; padding: 0.55rem 0.85rem; }
-}
 
-@media (max-width: 768px){
-  .toast{ top: 70px; padding: 10px 14px; }
-  .dialog{
-    width: min(520px, 94vw);
-    padding: 18px;
-  }
-  .dialog__actions{ gap:8px; margin-top: 14px; }
-}
+  /* Formulários */
+  .form{ gap: 14px; }
+  .input{ padding: 0.8rem 0.9rem; border-radius: 10px; }
 
-@media (max-width: 768px){
+  /* Quiz */
   .choice{ padding: 12px; }
   .choice__ui{ font-size: .98rem; }
   .quiz__question{ font-size: 1rem; }
+
+  /* Toast/Dialog (não sair da tela) */
+  .toast{ top: 70px; padding: 10px 14px; }
+  .dialog{ width: min(520px, 94vw); padding: 18px; }
+  .dialog__actions{ gap: 8px; margin-top: 14px; }
 }
