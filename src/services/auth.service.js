@@ -23,14 +23,16 @@ class AuthService {
             senha: senhaCriptografada
         });
 
-        // <<<< LÓGICA ADICIONADA >>>>
-        // Gera um token de verificação (pode ser de longa duração, pois é de uso único)
+        // Gera um token de verificação
         const verificationToken = jwt.sign({ id: novoCliente.id }, authConfig.secret, {
             expiresIn: '7d' // 7 dias para verificar
         });
 
-        // Envia o e-mail de verificação
-        await emailService.sendAccountVerificationEmail(novoCliente.email, verificationToken);
+        // [CORREÇÃO DE PERFORMANCE] Envia o e-mail em segundo plano (Fire-and-Forget)
+        emailService.sendAccountVerificationEmail(novoCliente.email, verificationToken)
+            .catch(err => {
+                console.error(`[BACKGROUND JOB FAILED] Falha ao enviar e-mail de verificação para ${novoCliente.email}:`, err);
+            });
 
         return novoCliente;
     }
@@ -38,7 +40,7 @@ class AuthService {
     async login(loginData) {
         const { email, senha } = loginData;
 
-        // --- NOVO: Lógica de Login do Admin ---
+        // --- Lógica de Login do Admin ---
         const isAdminLogin = email === process.env.ADMIN_EMAIL && senha === process.env.ADMIN_PASSWORD;
 
         if (isAdminLogin) {
@@ -54,11 +56,10 @@ class AuthService {
                     email: process.env.ADMIN_EMAIL
                 },
                 token: token,
-                role: 'admin' // Adiciona a role na resposta
+                role: 'admin'
             };
         }
         // --- FIM: Lógica de Login do Admin ---
-
 
         const cliente = await clienteRepository.findByEmail(email);
         if (!cliente) {
@@ -74,7 +75,6 @@ class AuthService {
             throw new Error('Credenciais inválidas.');
         }
 
-        // Adiciona a role 'cliente' ao token do cliente comum
         const token = jwt.sign({ id: cliente.id, role: 'cliente' }, authConfig.secret, {
             expiresIn: 86400 // 24 horas
         });
@@ -86,7 +86,7 @@ class AuthService {
                 email: cliente.email
             },
             token: token,
-            role: 'cliente' // Adiciona a role na resposta
+            role: 'cliente'
         };
     }
 
@@ -108,7 +108,6 @@ class AuthService {
         return { message: 'E-mail verificado com sucesso!' };
     }
 
-
     async forgotPassword(email) {
         const cliente = await clienteRepository.findByEmail(email);
         if (!cliente) {
@@ -120,7 +119,11 @@ class AuthService {
             expiresIn: 3600 // 1 hora
         });
 
-        await emailService.sendPasswordResetEmail(cliente.email, resetToken);
+        // [CORREÇÃO DE PERFORMANCE] Envia o e-mail em segundo plano (Fire-and-Forget)
+        emailService.sendPasswordResetEmail(cliente.email, resetToken)
+            .catch(err => {
+                console.error(`[BACKGROUND JOB FAILED] Falha ao enviar e-mail de redefinição para ${email}:`, err);
+            });
     }
 
     async resetPassword(token, novaSenha) {
