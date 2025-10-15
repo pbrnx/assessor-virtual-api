@@ -1,14 +1,15 @@
 // src/services/email.service.js
 const nodemailer = require('nodemailer');
 
-// 1. Cria o "transportador" que se conecta ao SendGrid.
+// --- [CONFIGURAÇÃO ATUALIZADA PARA GMAIL] ---
+// O 'transporter' agora usa o SMTP do Gmail com as credenciais do .env
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,
-    secure: false, 
+    secure: true, // true para a porta 465, false para outras portas
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.EMAIL_USER, // Seu e-mail do Gmail
+        pass: process.env.EMAIL_PASS, // A Senha de App de 16 letras
     },
 });
 
@@ -18,10 +19,10 @@ const transporter = nodemailer.createTransport({
  * @param {string} token - O token de redefinição de senha.
  */
 async function sendPasswordResetEmail(to, token) {
-    const resetLink = `http://localhost:${process.env.PORT || 3000}/?token=${token}&action=resetPassword`;
+    const resetLink = `https://assessor-virtual-api.onrender.com/?token=${token}&action=resetPassword`;
 
     const mailOptions = {
-        from: `"Assessor Virtual" <${process.env.EMAIL_FROM}>`,
+        from: process.env.EMAIL_FROM, // Ex: "Assessor Virtual" <seu-email@gmail.com>
         to: to,
         subject: 'Redefinição de Senha - Assessor Virtual',
         text: `Olá,\n\nPara redefinir sua senha, por favor, acesse o seguinte link (válido por 1 hora): ${resetLink}\n\nAtenciosamente,\nEquipe Assessor Virtual`,
@@ -50,17 +51,15 @@ async function sendPasswordResetEmail(to, token) {
 }
 
 /**
- * <<<< NOVA FUNÇÃO >>>>
  * Envia um e-mail de verificação de conta para o novo cliente.
  * @param {string} to - O e-mail do destinatário.
  * @param {string} token - O token de verificação.
  */
 async function sendAccountVerificationEmail(to, token) {
-    // Usaremos a mesma lógica de link com token, mas com uma ação diferente
-    const verificationLink = `http://localhost:${process.env.PORT || 3000}/?token=${token}&action=verifyEmail`;
+    const verificationLink = `https://assessor-virtual-api.onrender.com/?token=${token}&action=verifyEmail`;
 
     const mailOptions = {
-        from: `"Assessor Virtual" <${process.env.EMAIL_FROM}>`,
+        from: process.env.EMAIL_FROM,
         to: to,
         subject: 'Verifique sua Conta - Assessor Virtual',
         text: `Bem-vindo ao Assessor Virtual!\n\nPara ativar sua conta, por favor, acesse o seguinte link: ${verificationLink}\n\nAtenciosamente,\nEquipe Assessor Virtual`,
@@ -86,9 +85,7 @@ async function sendAccountVerificationEmail(to, token) {
     }
 }
 
-
-// Exporta a nova função junto com a antiga
 module.exports = {
     sendPasswordResetEmail,
     sendAccountVerificationEmail,
-};  
+};
