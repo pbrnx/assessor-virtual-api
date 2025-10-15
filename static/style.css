@@ -1,5 +1,6 @@
+/* style.css */
 :root{
-  /* Core palette - neutros e acentos cuidadosos */
+  /* Core palette - neutros e acentos cuidadosos (Dark Mode Default) */
   --bg: #0b0c0e;
   --surface: #111317;
   --surface-2: #161920;
@@ -24,7 +25,35 @@
   --blur: saturate(140%) blur(10px);
 
   --font: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+  /* Altura padrão do gráfico + versão mobile */
+  --chart-h: 320px;
 }
+
+/* =================================
+   LIGHT MODE PALETTE (SOBRESCRITA)
+   ================================= */
+body.light-mode {
+  /* Core palette - Light Mode */
+  --bg: #f8f9fa; /* Fundo muito claro */
+  --surface: #ffffff; /* Superfície principal clara */
+  --surface-2: #f1f3f5; /* Superfície secundária (ex: botões, chips) */
+  --elev: #e9ecef; /* Elementos em elevação */
+  --text: #212529; /* Texto escuro */
+  --muted: #6c757d; /* Texto mutado/secundário */
+  --line: #ced4da; /* Linhas de separação/bordas */
+
+  /* Shadows (Ajustadas para serem mais sutis em fundos claros) */
+  --shadow-1: 0 1px 4px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-2: 0 2px 6px rgba(0,0,0,0.1), 0 10px 30px rgba(0,0,0,0.15);
+
+  /* Blur (Ajustado para ser mais suave no modo claro) */
+  --blur: saturate(180%) blur(6px); 
+}
+
+/* =================================
+   ESTILOS GLOBAIS E BODY
+   ================================= */
 
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
@@ -37,6 +66,14 @@ body{
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color .3s ease, color .3s ease; /* Transição suave */
+}
+
+/* Body Light Mode adjustments */
+body.light-mode {
+  background: radial-gradient(1200px 800px at 10% -20%, #d4dde8, transparent 40%),
+              radial-gradient(1200px 800px at 120% 10%, #e8d4d4, transparent 40%),
+              var(--bg);
 }
 
 /* Typography */
@@ -47,6 +84,7 @@ body{
 .container{ width: min(1120px, 92vw); margin-inline: auto; padding: 28px 0 64px; }
 .sr-only{ position:absolute; left:-9999px; }
 
+/* Buttons */
 .btn{
   --b: 0.75rem;
   appearance: none;
@@ -86,6 +124,17 @@ body{
   color: var(--text);
   border-color: #2a2f38;
 }
+
+/* Botões Light Mode Overrides */
+body.light-mode .btn--ghost,
+body.light-mode .btn--quiet {
+  border-color: var(--line);
+  color: var(--muted);
+}
+body.light-mode .btn--quiet {
+    color: var(--text);
+}
+
 .btn--pill{ border-radius: 14px; padding: 0.6rem 0.9rem; }
 .btn--block{ width: 100%; }
 
@@ -104,7 +153,14 @@ body{
   background: rgba(17,19,23,0.7);
   backdrop-filter: var(--blur);
   border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background-color .3s ease, border-color .3s ease; /* Transição suave */
 }
+/* Nav Light Mode Overrides */
+body.light-mode .nav {
+  background: rgba(255,255,255,0.85);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
 .nav__container{
   width: min(1120px, 92vw); margin-inline:auto;
   display:flex; align-items:center; justify-content:space-between;
@@ -133,7 +189,14 @@ body{
   border: 1px solid rgba(255,255,255,0.06);
   box-shadow: var(--shadow-1);
   border-radius: var(--radius-lg);
+  transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease;
 }
+/* Cards Light Mode Overrides */
+body.light-mode .card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
 .card--auth{ width:min(480px, 92vw); padding: 28px; }
 .card__header{ margin-bottom: 12px; }
 
@@ -148,8 +211,15 @@ body{
   padding: 0.9rem 1rem;
   color: var(--text);
   outline: none;
-  transition: border-color .18s ease, box-shadow .18s ease;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .3s ease;
 }
+/* Input Light Mode Overrides */
+body.light-mode .input {
+  background: var(--surface);
+  border-color: var(--line);
+}
+body.light-mode .input::placeholder{ color: #adb5bd; } /* Um muted mais específico para placeholder */
+
 .input::placeholder{ color: #718096; }
 .input:focus{
   border-color: var(--primary);
@@ -168,6 +238,11 @@ body{
   border-color: #222630;
   padding: 24px;
 }
+/* Quiz Light Mode Overrides */
+body.light-mode .card--soft {
+  border-color: var(--line);
+}
+
 .form--quiz{ gap: 22px; }
 .quiz{ display:grid; gap: 22px; }
 .quiz__block{ display:grid; gap: 12px; }
@@ -181,6 +256,12 @@ body{
   cursor: pointer;
   transition: border-color .18s ease, background .18s ease, transform .18s ease;
 }
+/* Choice Light Mode Overrides */
+body.light-mode .choice {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
 .choice:hover{ border-color: var(--primary); }
 .choice input{ margin-top: 4px; accent-color: var(--primary); }
 .choice__ui{ color: var(--text); }
@@ -194,7 +275,14 @@ body{
   padding: 18px 20px;
   box-shadow: var(--shadow-1);
   margin: 18px 0 24px;
+  transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease;
 }
+/* Hero Light Mode Overrides */
+body.light-mode .hero {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
 .hero__title{ font-size: clamp(1.2rem, 1.6vw, 1.6rem); }
 .badge{
   color: var(--muted);
@@ -204,7 +292,15 @@ body{
   display:inline-block; padding: 2px 8px; border-radius: 999px;
   background: #21304a; color: #9ec1ff; border: 1px solid #2a3c5c;
   margin-left: 6px; font-weight: 700; letter-spacing: .01em;
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease;
 }
+/* Badge Light Mode Overrides */
+body.light-mode .badge__pill {
+  background: #e9e9f3; 
+  color: var(--primary-600); 
+  border: 1px solid #d0d4ef;
+}
+
 .balance{ display:flex; align-items:center; gap:12px; }
 .balance__label{ color: var(--muted); }
 .balance__value{ font-weight:800; letter-spacing:-0.02em; }
@@ -228,7 +324,13 @@ body{
   border-radius: var(--radius-lg);
   padding: 18px;
   box-shadow: var(--shadow-1);
+  transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease;
 }
+/* Block Light Mode Overrides */
+body.light-mode .block {
+  border: 1px solid var(--line);
+}
+
 .block__head{
   display:flex; align-items:center; justify-content:space-between;
   gap: 12px; flex-wrap: wrap;
@@ -248,17 +350,28 @@ body{
   border: 1px solid #1f2530;
   border-radius: var(--radius-md);
   padding: 16px;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background-color .3s ease;
   cursor: pointer;
   /* ADICIONADO PARA MELHOR CONTROLE VERTICAL */
   display: flex; 
   flex-direction: column;
 }
+/* Product Light Mode Overrides */
+body.light-mode .product {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
 .product:hover{
   transform: translateY(-2px);
   border-color: #2a3442;
   box-shadow: var(--shadow-2);
 }
+body.light-mode .product:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-1);
+}
+
 .product__head{
   display:flex; align-items:center; justify-content:space-between; gap: 8px;
   margin-bottom: 10px;
@@ -266,13 +379,22 @@ body{
 .product__risk{
   padding: 4px 10px; border-radius: 999px; font-weight:700; font-size:.85rem;
   border:1px solid transparent; letter-spacing: .01em;
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease;
 }
 .risk--low{ background:#12321f; color:#7ce3b2; border-color:#165a34; }
 .risk--mid{ background:#33230f; color:#ffc185; border-color:#5b3c1b; }
 .risk--high{ background:#3a1212; color:#ff9a9a; border-color:#5a2121; }
 
+/* Product Risk Light Mode Overrides */
+body.light-mode .risk--low{ background: #e6ffec; color: #1e7e34; border-color: #a3e0b2; }
+body.light-mode .risk--mid{ background: #fff8e1; color: #8d6e1b; border-color: #ffe08a; }
+body.light-mode .risk--high{ background: #ffebeb; color: #a51e24; border-color: #ffbaba; }
+
+
 .product__title{ font-weight:700; letter-spacing: -0.01em; }
 .product__price{ color: #9fc1ff; font-weight:800; font-size:1.3rem; }
+body.light-mode .product__price { color: var(--primary); }
+
 .product__meta{ color: var(--muted); font-size:.92rem; margin-top: 6px; }
 
 /* Filters */
@@ -286,14 +408,35 @@ body{
   font-weight: 600; cursor: pointer;
   transition: border-color .18s ease, background .18s ease, transform .18s ease;
 }
+/* Chip Light Mode Overrides */
+body.light-mode .chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
 .chip:hover{ border-color: var(--primary); transform: translateY(-1px); }
 .chip--active{ background: #1a2231; border-color: #2a3c5c; color: #b3d1ff; }
+
+/* Chip Active Light Mode Overrides */
+body.light-mode .chip--active{ 
+  background: var(--primary-600); 
+  border-color: var(--primary-700); 
+  color: white; 
+}
 
 /* List */
 .list{ display:grid; gap: 10px; }
 .item{
   background:#0f1319; border:1px solid #1e2430; border-radius: 12px; padding: 12px;
+  transition: background-color .3s ease, border-color .3s ease;
 }
+/* Item Light Mode Overrides */
+body.light-mode .item {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
 .item__head{
   display:flex; align-items:center; justify-content:space-between; gap: 8px;
   font-weight:700;
@@ -304,13 +447,31 @@ body{
 }
 .btn--sell:hover{ background:#3a1f23; }
 
+/* Btn Sell Light Mode Overrides */
+body.light-mode .btn--sell{
+  background: transparent; 
+  border:1px solid #ffbaba; 
+  color: var(--danger);
+}
+body.light-mode .btn--sell:hover{ 
+  background:#fff0f0; 
+}
+
+
 /* Canvas */
 .canvas{
   background: linear-gradient(180deg, #0f1217, #0c0f12);
   border:1px solid #1e2430;
   border-radius: 16px;
   padding: 16px;
+  transition: background-color .3s ease, border-color .3s ease;
 }
+/* Canvas Light Mode Overrides */
+body.light-mode .canvas {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
 
 /* Toast */
 .toast{
@@ -323,7 +484,15 @@ body{
   padding: 12px 16px;
   box-shadow: var(--shadow-1);
   z-index: 2000;
+  transition: background-color .3s ease, border-color .3s ease, color .3s ease;
 }
+/* Toast Light Mode Overrides */
+body.light-mode .toast {
+  background: rgba(255,255,255,0.95);
+  color: var(--text);
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
 .toast--hidden{ display:none; }
 .toast--error{ border-color: rgba(239,68,68,0.4); }
 .toast--success{ border-color: rgba(16,185,129,0.35); }
@@ -335,6 +504,12 @@ body{
   backdrop-filter: blur(6px);
   z-index: 3000;
 }
+/* Overlay Light Mode Overrides */
+body.light-mode .overlay {
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(4px);
+}
+
 .overlay--hidden{ display:none; }
 
 .dialog{
@@ -343,7 +518,14 @@ body{
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 16px; padding: 22px;
   box-shadow: var(--shadow-2);
+  transition: background-color .3s ease, border-color .3s ease;
 }
+/* Dialog Light Mode Overrides */
+body.light-mode .dialog {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
 .dialog__title{ font-size:1.2rem; margin: 0 0 8px; }
 .dialog__text{ color: var(--muted); }
 .dialog__body{ display:grid; gap: 12px; }
@@ -353,6 +535,8 @@ body{
   background: transparent; border: none; color: var(--muted);
   font-size: 1.6rem; cursor: pointer;
 }
+body.light-mode .dialog__close { color: var(--muted); }
+
 
 /* Spinner */
 .spinner{
@@ -362,6 +546,8 @@ body{
   border-top-color: var(--primary);
   animation: spin 900ms linear infinite;
 }
+body.light-mode .spinner{ border-color: rgba(0,0,0,0.08); }
+
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
 /* Accessibility focus */
@@ -370,8 +556,6 @@ body{
   outline-offset: 2px;
 }
 
-/* Altura padrão do gráfico + versão mobile */
-:root{ --chart-h: 320px; }
 @media (max-width: 768px){
   :root{ --chart-h: 240px; }
 }
@@ -465,4 +649,3 @@ body{
     order: 1;
   }
 }
-

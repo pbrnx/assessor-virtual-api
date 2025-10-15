@@ -12,7 +12,6 @@ const elements = {
         resetPassword: document.getElementById('reset-password-view'),
         questionario: document.getElementById('questionario-view'),
         dashboard: document.getElementById('dashboard-view'),
-        // REMOVA AQUI: depositBtn: document.getElementById('deposit-btn'),
     },
     forms: {
         login: document.getElementById('login-form'),
@@ -32,13 +31,13 @@ const elements = {
         nav: document.getElementById('user-session-nav'),
         welcomeMessage: document.getElementById('welcome-message'),
         logoutButton: document.getElementById('logout-button'),
+        themeToggleButton: document.getElementById('theme-toggle-btn'), // ADICIONADO
     },
     dashboard: {
         header: document.getElementById('dashboard-header'),
         perfilBadge: document.getElementById('perfil-badge'),
         saldoAtual: document.getElementById('saldo-atual'),
-        // ADICIONE AQUI:
-        depositBtn: document.getElementById('deposit-btn'), // <<< BOTÃO DE DEPÓSITO
+        depositBtn: document.getElementById('deposit-btn'),
         recomendacaoContainer: document.getElementById('recomendacao-container'),
         marketplaceGrid: document.getElementById('marketplace-grid'),
         marketplaceFilters: document.getElementById('marketplace-filters'),
@@ -58,6 +57,8 @@ const elements = {
 };
 
 let carteiraChartInstance = null;
+let latestCarteiraData = null; // Armazena os dados mais recentes para re-renderização do gráfico
+
 export const getElements = () => elements;
 export const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -85,6 +86,24 @@ export function switchView(viewName) {
     elements.userSession.nav.classList.toggle('session--hidden', isAuthView);
 }
 
+// FUNÇÃO DE TEMA
+export function applyUserTheme(theme) {
+    const body = document.body;
+    const isLightMode = theme === 'light-mode';
+    
+    // 1. Aplica/Remove a classe 'light-mode' no <body>
+    body.classList.toggle('light-mode', isLightMode);
+
+    // 2. Atualiza o ícone do botão para refletir o novo tema
+    const iconSpan = document.getElementById('theme-icon');
+    if (iconSpan) {
+        iconSpan.textContent = isLightMode ? '🌙' : '☀️';
+        iconSpan.ariaLabel = isLightMode ? 'Mudar para o tema escuro' : 'Mudar para o tema claro';
+    }
+}
+// FIM DA FUNÇÃO DE TEMA
+
+
 export function renderWelcomeMessage(userName) {
     elements.userSession.welcomeMessage.textContent = `Olá, ${userName.split(' ')[0]}!`;
 }
@@ -110,8 +129,9 @@ export function renderRecomendacao(recomendacaoData) {
     ).join('');
 }
 
-// --- ATUALIZADO: Botão "Vender Tudo" foi removido daqui ---
+// ATUALIZADO: Armazena dados e renderiza o gráfico
 export function renderCarteira(carteiraData) {
+    latestCarteiraData = carteiraData; // Armazena os dados mais recentes
     if (!carteiraData || carteiraData.ativos.length === 0) {
         elements.dashboard.carteiraContainer.innerHTML = `<div class="list__empty">Sua carteira está vazia.</div>`;
         renderCarteiraChart(null); // Limpa o gráfico
@@ -136,6 +156,12 @@ export function renderCarteira(carteiraData) {
     renderCarteiraChart(carteiraData);
 }
 
+// NOVO: Função para forçar a re-renderização do gráfico (usada no toggle de tema)
+export function forceChartRedraw() {
+    if (latestCarteiraData) {
+        renderCarteiraChart(latestCarteiraData);
+    }
+}
 
 function renderCarteiraChart(carteiraData) {
     if (carteiraChartInstance) carteiraChartInstance.destroy();
@@ -145,6 +171,13 @@ function renderCarteiraChart(carteiraData) {
         return;
     }
     chartContainer.style.display = 'block';
+    
+    // CORREÇÃO AQUI: Obtendo a cor da borda dinamicamente
+    const isLightMode = document.body.classList.contains('light-mode');
+    const borderColor = isLightMode ? '#ffffff' : '#111317';
+    // Se quiser que a borda seja a cor de fundo da superfície do canvas,
+    // seria var(--surface) que é #ffffff no light e #111317 no dark.
+    
     carteiraChartInstance = new Chart(elements.dashboard.carteiraChartCanvas, {
         type: 'doughnut',
         data: {
@@ -152,7 +185,7 @@ function renderCarteiraChart(carteiraData) {
             datasets: [{
                 data: carteiraData.ativos.map(a => a.valorTotal),
                 backgroundColor: ['#4f8cff', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#3b82f6', '#14b8a6'],
-                borderColor: '#111317',
+                borderColor: borderColor, 
                 borderWidth: 4,
             }]
         },

@@ -4,12 +4,15 @@ import { apiCall } from './services/api.js';
 import { 
     initState, setSession, clearSession, getCurrentUser, 
     updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira,
-    setUserRecomendacao, getUserRecomendacao 
+    setUserRecomendacao, getUserRecomendacao,
+    getUserTheme, setUserTheme 
 } from './services/state.js';
 import { 
     switchView, showAlert, renderWelcomeMessage, renderDashboardHeader,
     renderRecomendacao, renderCarteira, renderMarketplace,
-    getElements, openBuyModal, openSellModal, openConfirmModal, closeModal, formatCurrency
+    getElements, openBuyModal, openSellModal, openConfirmModal, closeModal, formatCurrency,
+    applyUserTheme,
+    forceChartRedraw // IMPORT ADICIONADO
 } from './services/ui.js';
 
 let actionToken = null;
@@ -102,7 +105,6 @@ async function handleQuestionario(event) {
 }
 
 async function handleCompra(produtoId, quantidade, button) {
-    // <<<< CORRIGIDO: Validação mais robusta dos dados antes de enviar >>>>
     const idNum = Number(produtoId);
     const qtdNum = Number(quantidade);
 
@@ -214,6 +216,17 @@ async function handleRecalcularRecomendacao(event) {
     switchView('questionario');
 }
 
+// HANDLER DE TEMA
+function handleThemeToggle() {
+    const currentTheme = getUserTheme();
+    const newTheme = currentTheme === 'dark-mode' ? 'light-mode' : 'dark-mode';
+    setUserTheme(newTheme);
+    applyUserTheme(newTheme);
+    
+    // Força a re-renderização do gráfico com a nova cor de borda
+    forceChartRedraw();
+}
+
 async function loadDashboard() {
     const user = getCurrentUser();
     try {
@@ -255,9 +268,12 @@ function setupEventListeners() {
     elements.links.backToLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); });
 
     elements.userSession.logoutButton.addEventListener('click', () => { clearSession(); switchView('login'); });
+    
+    // LISTENER DE TEMA
+    if (elements.userSession.themeToggleButton) {
+        elements.userSession.themeToggleButton.addEventListener('click', handleThemeToggle);
+    }
 
-    // ADICIONADO: Listener para abrir o modal de depósito
-    // ATENÇÃO: É necessário adicionar 'depositBtn' ao objeto 'elements' no ui.js
     const depositBtn = document.getElementById('deposit-btn');
     if (depositBtn) {
         depositBtn.addEventListener('click', () => {
@@ -284,8 +300,6 @@ function setupEventListeners() {
         }
     });
 
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Atualizamos o seletor para procurar por '.btn--sell', que corresponde à nova classe do CSS.
     elements.dashboard.carteiraContainer.addEventListener('click', (e) => {
         const sellBtn = e.target.closest('.btn--sell');
         const carteira = getUserCarteira();
@@ -297,7 +311,6 @@ function setupEventListeners() {
             openSellModal(ativo, handleVenda);
         }
     });
-    // --- FIM DA CORREÇÃO ---
     
     elements.dashboard.investirRecomendacaoBtn.addEventListener('click', handleInvestirRecomendacao);
     elements.dashboard.recalcularRecomendacaoBtn.addEventListener('click', handleRecalcularRecomendacao);
@@ -307,7 +320,6 @@ function setupEventListeners() {
         if (modal.closeBtn) modal.closeBtn.addEventListener('click', () => closeModal(modal.overlay.id.split('-')[0]));
     });
 
-    // Adiciona listener para o botão de cancelar no modal de confirmação
     const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => closeModal('confirm'));
@@ -321,6 +333,9 @@ async function initializeUserFlow() {
         return;
     }
     renderWelcomeMessage(user.nome);
+    // Aplica o tema após a autenticação, antes de carregar o dashboard
+    applyUserTheme(getUserTheme()); 
+
     try {
         const userDetails = await apiCall(`/clientes/${user.id}`);
         updateCurrentUser(userDetails);
@@ -358,12 +373,17 @@ async function handleUrlActions() {
 }
 
 async function main() {
-    const urlActionHandled = await handleUrlActions();
     setupEventListeners();
+    initState(); // Carrega o tema do localStorage/sistema
+    
+    // Aplica o tema imediatamente no carregamento
+    applyUserTheme(getUserTheme()); 
+
+    const urlActionHandled = await handleUrlActions();
     if (urlActionHandled) {
         return;
     }
-    initState();
+
     if (getCurrentUser()) {
         await initializeUserFlow();
     } else {
