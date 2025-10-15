@@ -17,22 +17,16 @@
             </nav>
         </div>
     </header>
-
     <main class="site-main">
         <div class="main-container">
             <section id="login-view" class="auth-view">
                 <div class="auth-card">
                     <div class="auth-header"><h1>Acesse sua Conta</h1></div>
                     <form id="login-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="login-email">Email</label>
-                            <input type="email" id="login-email" class="form-input" required placeholder="seu@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="login-senha">Senha</label>
-                            <input type="password" id="login-senha" class="form-input" required>
-                        </div>
+                        <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" class="form-input" required placeholder="seu@email.com"></div>
+                        <div class="form-group"><label for="login-senha">Senha</label><input type="password" id="login-senha" class="form-input" required></div>
                         <button type="submit" class="form-button">Entrar</button>
+                        <p class="auth-footer"><a href="#" id="show-forgot-password-link">Esqueceu sua senha?</a></p>
                         <p class="auth-footer">Não tem uma conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
                     </form>
                 </div>
@@ -41,20 +35,31 @@
                  <div class="auth-card">
                     <div class="auth-header"><h1>Crie sua Conta</h1></div>
                     <form id="register-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="register-nome">Nome Completo</label>
-                            <input type="text" id="register-nome" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="register-email">Email</label>
-                            <input type="email" id="register-email" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="register-senha">Senha</label>
-                            <input type="password" id="register-senha" class="form-input" required>
-                        </div>
+                        <div class="form-group"><label for="register-nome">Nome Completo</label><input type="text" id="register-nome" class="form-input" required></div>
+                        <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" class="form-input" required></div>
+                        <div class="form-group"><label for="register-senha">Senha</label><input type="password" id="register-senha" class="form-input" required></div>
                         <button type="submit" class="form-button">Cadastrar</button>
                         <p class="auth-footer">Já tem uma conta? <a href="#" id="show-login-link">Faça login</a></p>
+                    </form>
+                </div>
+            </section>
+            <section id="forgot-password-view" class="auth-view hidden">
+                <div class="auth-card">
+                    <div class="auth-header"><h1>Redefinir Senha</h1></div>
+                    <p class="auth-description">Digite seu e-mail abaixo. Se ele estiver em nosso sistema, enviaremos um link para você criar uma nova senha.</p>
+                    <form id="forgot-password-form" class="auth-form">
+                        <div class="form-group"><label for="forgot-email">Email</label><input type="email" id="forgot-email" class="form-input" required placeholder="seu@email.com"></div>
+                        <button type="submit" class="form-button">Enviar Link</button>
+                        <p class="auth-footer"><a href="#" id="back-to-login-link">Voltar para o Login</a></p>
+                    </form>
+                </div>
+            </section>
+            <section id="reset-password-view" class="auth-view hidden">
+                <div class="auth-card">
+                    <div class="auth-header"><h1>Crie uma Nova Senha</h1></div>
+                    <form id="reset-password-form" class="auth-form">
+                        <div class="form-group"><label for="reset-senha">Nova Senha</label><input type="password" id="reset-senha" class="form-input" required></div>
+                        <button type="submit" class="form-button">Salvar Nova Senha</button>
                     </form>
                 </div>
             </section>
@@ -67,7 +72,6 @@
                     <button type="submit" class="form-button">Ver Minha Carteira Ideal</button>
                 </form>
             </section>
-
             <section id="dashboard-view" class="app-view hidden">
                 <div id="dashboard-header" class="dashboard-header"></div>
                 <div class="dashboard-grid">
@@ -101,14 +105,10 @@
             <div id="alert-container" class="alert hidden"></div>
         </div>
     </main>
-
     <div id="buy-modal" class="modal-overlay hidden"><div class="modal-content"><button id="buy-modal-close-btn" class="modal-close">&times;</button><div id="buy-modal-body"></div></div></div>
     <div id="deposit-modal" class="modal-overlay hidden"><div class="modal-content"><button id="deposit-modal-close-btn" class="modal-close">&times;</button><h3>Realizar Depósito</h3><form id="deposit-form"><div class="form-group"><label for="deposit-amount">Valor (R$)</label><input type="number" id="deposit-amount" class="form-input" min="1" step="0.01" placeholder="Ex: 500,00" required></div><button type="submit" class="form-button">Confirmar</button></form></div></div>
     <div id="sell-modal" class="modal-overlay hidden"><div class="modal-content"><button id="sell-modal-close-btn" class="modal-close">&times;</button><div id="sell-modal-body"></div></div></div>    
-<div id="loading-overlay" class="modal-overlay hidden">
-        <div class="loader"></div>
-    </div>
-
+    <div id="loading-overlay" class="modal-overlay hidden"><div class="loader"></div></div>
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <button id="confirm-modal-close-btn" class="modal-close">&times;</button>
@@ -120,6 +120,8 @@
             </div>
         </div>
     </div>
-    <script src="app.js" defer></script>
+
+    <script src="app.js" type="module" defer></script>
+
 </body>
 </html>
