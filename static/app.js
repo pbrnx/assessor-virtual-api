@@ -1,7 +1,10 @@
 // static/app.js
 
 import { apiCall } from './services/api.js';
-import { initState, setSession, clearSession, getCurrentUser, updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira } from './services/state.js';
+import { 
+    initState, setSession, clearSession, getCurrentUser, 
+    updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira 
+} from './services/state.js';
 import { 
     switchView, showAlert, renderWelcomeMessage, renderDashboardHeader,
     renderRecomendacao, renderCarteira, renderMarketplace,
@@ -10,12 +13,92 @@ import {
 
 // --- HANDLERS (lógica de negócio do frontend) ---
 
-async function handleLogin(event) { /* ... (sem alterações) */ }
-async function handleRegister(event) { /* ... (sem alterações) */ }
-async function handleForgotPassword(event) { /* ... (sem alterações) */ }
-async function handleResetPassword(event) { /* ... (sem alterações) */ }
-async function handleVerifyEmail(token) { /* ... (sem alterações) */ }
-async function handleQuestionario(event) { /* ... (sem alterações) */ }
+async function handleLogin(event) {
+    event.preventDefault();
+    const button = event.submitter;
+    const email = event.target.elements['login-email'].value;
+    const senha = event.target.elements['login-senha'].value;
+    try {
+        const data = await apiCall('/auth/login', { method: 'POST', body: JSON.stringify({ email, senha }) }, button);
+        setSession(data.cliente, data.token);
+        await initializeUserFlow();
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function handleRegister(event) {
+    event.preventDefault();
+    const button = event.submitter;
+    const nome = event.target.elements['register-nome'].value;
+    const email = event.target.elements['register-email'].value;
+    const senha = event.target.elements['register-senha'].value;
+    try {
+        const data = await apiCall('/auth/register', { method: 'POST', body: JSON.stringify({ nome, email, senha }) }, button);
+        showAlert(data.message || 'Cadastro realizado! Verifique seu e-mail.', 'success');
+        switchView('login');
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function handleForgotPassword(event) {
+    event.preventDefault();
+    const button = event.submitter;
+    const email = event.target.elements['forgot-email'].value;
+    try {
+        const data = await apiCall('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }, button);
+        showAlert(data.message, 'success');
+        switchView('login');
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function handleResetPassword(event) {
+    event.preventDefault();
+    const button = event.submitter;
+    const novaSenha = event.target.elements['reset-senha'].value;
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    try {
+        const data = await apiCall('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, novaSenha }) }, button);
+        showAlert(data.message, 'success');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        switchView('login');
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function handleVerifyEmail(token) {
+    try {
+        showAlert('Verificando sua conta...', 'success');
+        const data = await apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) });
+        showAlert(data.message, 'success');
+    } catch (error) {
+        showAlert(error.message, 'error');
+    } finally {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        switchView('login');
+    }
+}
+
+async function handleQuestionario(event) {
+    event.preventDefault();
+    const button = event.submitter;
+    const user = getCurrentUser();
+    const formData = new FormData(event.target);
+    const respostas = Object.fromEntries(formData.entries());
+    try {
+        const perfil = await apiCall(`/clientes/${user.id}/perfil`, { method: 'POST', body: JSON.stringify({ respostas }) }, button);
+        const updatedUser = { ...user, perfilId: perfil.id };
+        updateCurrentUser(updatedUser);
+        await loadDashboard();
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
 
 async function handleCompra(produtoId, quantidade, button) {
     try {
@@ -151,21 +234,56 @@ function setupEventListeners() {
     });
 }
 
-async function initializeUserFlow() { /* ... (sem alterações) */ }
-async function handleUrlActions() { /* ... (sem alterações) */ }
-async function main() { /* ... (sem alterações) */ }
+async function initializeUserFlow() {
+    const user = getCurrentUser();
+    if (!user) {
+        switchView('login');
+        return;
+    }
+    renderWelcomeMessage(user.nome);
+    try {
+        const userDetails = await apiCall(`/clientes/${user.id}`);
+        updateCurrentUser(userDetails);
+        if (userDetails.perfilId) {
+            await loadDashboard();
+        } else {
+            switchView('questionario');
+        }
+    } catch (error) {
+        if (error.message !== 'Não autorizado') showAlert(error.message, 'error');
+    }
+}
+
+async function handleUrlActions() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const action = urlParams.get('action');
+    if (!token || !action) return false;
+    if (action === 'resetPassword') {
+        switchView('resetPassword');
+        return true;
+    }
+    if (action === 'verifyEmail') {
+        await handleVerifyEmail(token);
+        return true;
+    }
+    return false;
+}
+
+async function main() {
+    const urlActionHandled = await handleUrlActions();
+    if (urlActionHandled) {
+        setupEventListeners();
+        return;
+    }
+    initState();
+    setupEventListeners();
+    if (getCurrentUser()) {
+        await initializeUserFlow();
+    } else {
+        switchView('login');
+    }
+}
 
 // Inicia a aplicação
 main();
-
-
-// Funções não alteradas para completar o arquivo
-async function handleLogin(event) { event.preventDefault(); const button = event.submitter; const email = event.target.elements['login-email'].value; const senha = event.target.elements['login-senha'].value; try { const data = await apiCall('/auth/login', { method: 'POST', body: JSON.stringify({ email, senha }) }, button); setSession(data.cliente, data.token); await initializeUserFlow(); } catch (error) { showAlert(error.message, 'error'); } }
-async function handleRegister(event) { event.preventDefault(); const button = event.submitter; const nome = event.target.elements['register-nome'].value; const email = event.target.elements['register-email'].value; const senha = event.target.elements['register-senha'].value; try { const data = await apiCall('/auth/register', { method: 'POST', body: JSON.stringify({ nome, email, senha }) }, button); showAlert(data.message || 'Cadastro realizado! Verifique seu e-mail.', 'success'); switchView('login'); } catch (error) { showAlert(error.message, 'error'); } }
-async function handleForgotPassword(event) { event.preventDefault(); const button = event.submitter; const email = event.target.elements['forgot-email'].value; try { const data = await apiCall('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }, button); showAlert(data.message, 'success'); switchView('login'); } catch (error) { showAlert(error.message, 'error'); } }
-async function handleResetPassword(event) { event.preventDefault(); const button = event.submitter; const novaSenha = event.target.elements['reset-senha'].value; const urlParams = new URLSearchParams(window.location.search); const token = urlParams.get('token'); try { const data = await apiCall('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, novaSenha }) }, button); showAlert(data.message, 'success'); window.history.replaceState({}, document.title, window.location.pathname); switchView('login'); } catch (error) { showAlert(error.message, 'error'); } }
-async function handleVerifyEmail(token) { try { showAlert('Verificando sua conta...', 'success'); const data = await apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }); showAlert(data.message, 'success'); } catch (error) { showAlert(error.message, 'error'); } finally { window.history.replaceState({}, document.title, window.location.pathname); switchView('login'); } }
-async function handleQuestionario(event) { event.preventDefault(); const button = event.submitter; const user = getCurrentUser(); const formData = new FormData(event.target); const respostas = Object.fromEntries(formData.entries()); try { const perfil = await apiCall(`/clientes/${user.id}/perfil`, { method: 'POST', body: JSON.stringify({ respostas }) }, button); const updatedUser = { ...user, perfilId: perfil.id }; updateCurrentUser(updatedUser); await loadDashboard(); } catch (error) { showAlert(error.message, 'error'); } }
-async function initializeUserFlow() { const user = getCurrentUser(); if (!user) { switchView('login'); return; } renderWelcomeMessage(user.nome); try { const userDetails = await apiCall(`/clientes/${user.id}`); updateCurrentUser(userDetails); if (userDetails.perfilId) { await loadDashboard(); } else { switchView('questionario'); } } catch (error) { if (error.message !== 'Não autorizado') showAlert(error.message, 'error'); } }
-async function handleUrlActions() { const urlParams = new URLSearchParams(window.location.search); const token = urlParams.get('token'); const action = urlParams.get('action'); if (!token || !action) return false; if (action === 'resetPassword') { switchView('resetPassword'); return true; } if (action === 'verifyEmail') { await handleVerifyEmail(token); return true; } return false; }
-async function main() { const urlActionHandled = await handleUrlActions(); if (urlActionHandled) { setupEventListeners(); return; } initState(); setupEventListeners(); if (getCurrentUser()) { await initializeUserFlow(); } else { switchView('login'); } }
