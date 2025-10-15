@@ -1,5 +1,5 @@
 // src/config/auth.config.js
 
 module.exports = {
-  secret: process.env.secret
+  secret: process.env.SECRET
 };

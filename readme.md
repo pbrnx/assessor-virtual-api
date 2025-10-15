@@ -1,12 +1,11 @@
 # Assessor de Investimentos Virtual
 <img width="1902" height="952" alt="image" src="https://github.com/user-attachments/assets/9cc01489-d989-4878-9a85-f66c53c2e802" />
 
-## Integrantes 
+## Integrantes
 - Nome: Pedro Augusto Carneiro Barone Bomfim - RM: 99781
 - Nome: João Pedro de Albuquerque Oliveira - RM: 551579
 - Nome: Matheus Augusto Santos Rego - RM:551466
 - Nome: Ian Cancian Nachtergaele - RM: 98387
-
 
 ## Como usar?
 A aplicação tem um deploy no render, para uso sem necessidade de configuração local: https://assessor-virtual-api.onrender.com
@@ -19,23 +18,38 @@ A documentação dos endpoints pode ser encontrada aqui: https://assessor-virtua
 
 O **Assessor de Investimentos Virtual** é uma aplicação Full Stack que simula uma plataforma de investimentos completa. O projeto consiste em uma API RESTful construída com Node.js e Express, conectada a um banco de dados Oracle, e um frontend dinâmico (SPA - Single Page Application) desenvolvido com Vanilla JavaScript, HTML e CSS.
 
-A plataforma permite que usuários se cadastrem, definam seu perfil de investidor através de um questionário (suitability), gerenciem um saldo em conta, explorem um marketplace de ativos e montem sua própria carteira de investimentos com funcionalidades de compra e venda.
+A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-mail, redefinam senhas, definam seu perfil de investidor através de um questionário (suitability), gerenciem um saldo em conta, explorem um marketplace de ativos e montem sua própria carteira de investimentos com funcionalidades de compra e venda.
 
 ---
 
 ## ✨ Funcionalidades
 
--   **👤 Gestão de Clientes**: Cadastro e login simplificado de usuários.
+-   **👤 Gestão de Clientes e Segurança**:
+    -   Cadastro e login de usuários com senhas criptografadas.
+    -   **Verificação de E-mail**: Processo de ativação de conta via token enviado por e-mail para garantir a autenticidade do usuário.
+    -   **Recuperação de Senha**: Funcionalidade de "Esqueci minha senha" que envia um link de redefinição por e-mail.
+    -   **Autenticação JWT**: Uso de JSON Web Tokens para proteger as rotas da API, garantindo que apenas usuários autenticados acessem seus dados.
+    -   **Controle de Acesso por Papel (Role-Based)**: Distinção entre usuários "cliente" e "admin", com rotas específicas protegidas para administradores (como a gestão de produtos de investimento).
+
 -   **❓ Perfil de Investidor (Suitability)**: Questionário para determinar o perfil do investidor (Conservador, Moderado, Arrojado).
--   **🤖 Carteira Recomendada**: Geração de uma carteira de investimentos sugerida com base no perfil do usuário.
+
+-   **🤖 Carteira Recomendada**: Geração de uma carteira de investimentos sugerida com base no perfil do usuário, utilizando o padrão de projeto **Strategy** para cada tipo de perfil.
+
 -   **💹 Marketplace de Ativos**: Catálogo de produtos de investimento com preços, tipos e níveis de risco variados.
+
 -   **💰 Gestão de Saldo**: Funcionalidade para **Depositar** valores na conta.
--   **🛒 Ciclo de Investimento**: Funções completas para **Comprar** e **Vender** ativos do marketplace.
+
+-   **🛒 Ciclo de Investimento**:
+    -   Função de **Comprar** ativos com base no **valor monetário** desejado, com o sistema calculando a quantidade de cotas.
+    -   Função de **Vender** uma quantidade específica de cotas de um ativo.
+
 -   **📊 Dashboard do Investidor**:
     -   Visualização da carteira de ativos do usuário ("Minha Carteira").
     -   Gráfico de pizza com a distribuição percentual dos investimentos.
     -   Saldo atualizado em tempo real.
--   **🚀 Investimento Automático**: Botão "Investir com 1 Clique" que aloca o saldo do usuário na carteira recomendada.
+
+-   **🚀 Investimento Automático**: Botão "Investir com 1 Clique" que aloca todo o saldo do usuário na carteira recomendada.
+
 -   **📚 Documentação Interativa**: API documentada com Swagger (OpenAPI) para fácil visualização e teste dos endpoints.
 
 ---
@@ -46,6 +60,9 @@ A plataforma permite que usuários se cadastrem, definam seu perfil de investido
 -   **Node.js**
 -   **Express.js**: Framework para a construção da API REST.
 -   **OracleDB (`oracledb`)**: Driver para conexão com o banco de dados Oracle.
+-   **JSON Web Token (`jsonwebtoken`)**: Para autenticação baseada em tokens.
+-   **bcryptjs**: Para criptografia de senhas.
+-   **Nodemailer**: Para o envio de e-mails de verificação e recuperação de senha.
 -   **Swagger UI Express**: Para servir a documentação da API.
 -   **DotEnv**: Para gerenciamento de variáveis de ambiente.
 
@@ -77,16 +94,13 @@ Siga os passos abaixo para rodar o projeto localmente.
     ```
 
 2.  **Instale as dependências:**
-    *(O projeto usa `pnpm`, mas `npm` também funciona)*
     ```bash
     npm install
-    # ou
-    pnpm install
     ```
 
 3.  **Configure as variáveis de ambiente:**
     -   Crie um arquivo chamado `.env` na raiz do projeto.
-    -   Copie o conteúdo do exemplo abaixo e preencha com suas credenciais do Oracle.
+    -   Copie o conteúdo do exemplo abaixo e preencha com suas credenciais do Oracle e outras configurações.
 
     **.env.example**
     ```env
@@ -97,6 +111,20 @@ Siga os passos abaixo para rodar o projeto localmente.
     DB_USER=SEU_USUARIO_ORACLE
     DB_PASSWORD=SUA_SENHA_ORACLE
     DB_URL=oracle.fiap.com.br:1521/ORCL
+    
+    # Chave secreta para JWT
+    SECRET=SUA_CHAVE_SECRETA_SUPER_SEGURA
+
+    # Credenciais de Admin
+    ADMIN_EMAIL=admin@admin.com
+    ADMIN_PASSWORD=admin
+    
+    # Configs do Serviço de Email (ex: Mailtrap, SendGrid)
+    EMAIL_HOST=smtp.mailtrap.io
+    EMAIL_PORT=2525
+    EMAIL_USER=SEU_USER
+    EMAIL_PASS=SUA_SENHA
+    EMAIL_FROM="Assessor Virtual" <no-reply@assessor.com>
     ```
 
 4.  **Configure o Banco de Dados:**
@@ -209,7 +237,6 @@ Após iniciar o servidor, a aplicação estará disponível nos seguintes endere
     > Acesse este link para ver todos os endpoints da API, seus parâmetros, e para testá-los diretamente pelo navegador.
     <img width="1902" height="950" alt="image" src="https://github.com/user-attachments/assets/9d2e8bb8-2503-47bb-839b-62bfef487032" />
 
-
 ---
 
 ## 📂 Estrutura do Projeto
@@ -217,15 +244,16 @@ Após iniciar o servidor, a aplicação estará disponível nos seguintes endere
     .
     ├── src
     │   ├── api                 # Arquivos de rotas (endpoints)
-    │   ├── config              # Configuração do banco de dados
+    │   ├── config              # Configuração do banco de dados e autenticação
     │   ├── controllers         # Camada que lida com requisições e respostas
     │   ├── dtos                # Data Transfer Objects (contratos de dados)
-    │   ├── middlewares         # Middlewares (ex: errorHandler)
+    │   ├── middlewares         # Middlewares (ex: errorHandler, authJwt)
     │   ├── models              # Modelos de domínio da aplicação
     │   ├── repositories        # Camada de acesso ao banco de dados
     │   └── services            # Camada de regras de negócio
     ├── static                  # Arquivos do frontend
-    │   ├── app.js              # Lógica do frontend (SPA)
+    │   ├── services            # Módulos de serviço do frontend (api.js, ui.js, state.js)
+    │   ├── app.js              # Lógica principal do frontend (SPA)
     │   ├── index.html          # Estrutura da página
     │   └── style.css           # Estilização
     ├── .env                    # Arquivo de variáveis de ambiente (local)
