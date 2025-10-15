@@ -4,7 +4,7 @@ const { RegisterRequestDTO, LoginRequestDTO } = require('../dtos/auth.dto');
 
 class AuthController {
 
-    // ... (métodos register, login, forgotPassword, resetPassword existentes) ...
+    // (métodos register, login, forgotPassword, resetPassword existentes) ...
     async register(req, res, next) {
         try {
             const registerRequest = new RegisterRequestDTO(req.body);
@@ -13,7 +13,7 @@ class AuthController {
             }
             const novoCliente = await authService.register(registerRequest);
             res.status(201).json({
-                message: "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado para sua caixa de entrada."
+                message: "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado para sua caixa de entrada (se não encontrar, verifique o Spam)"
             });
         } catch (error) {
             error.statusCode = error.message.includes('e-mail já está cadastrado') ? 409 : 400;

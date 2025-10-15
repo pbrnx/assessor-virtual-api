@@ -6,7 +6,7 @@
 class CompraRequestDTO {
     constructor(body) {
         this.produtoId = body.produtoId;
-        this.quantidade = body.quantidade;
+        this.valor = body.valor; // <-- MUDANÇA: de 'quantidade' para 'valor'
     }
 }
 

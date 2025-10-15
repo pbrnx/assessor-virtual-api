@@ -38,13 +38,33 @@ class AuthService {
     async login(loginData) {
         const { email, senha } = loginData;
 
+        // --- NOVO: Lógica de Login do Admin ---
+        const isAdminLogin = email === process.env.ADMIN_EMAIL && senha === process.env.ADMIN_PASSWORD;
+
+        if (isAdminLogin) {
+            const adminUser = { id: 'admin', nome: 'Administrador', role: 'admin' };
+            const token = jwt.sign({ id: adminUser.id, role: adminUser.role }, authConfig.secret, {
+                expiresIn: 86400 // 24 horas
+            });
+
+            return {
+                cliente: {
+                    id: adminUser.id,
+                    nome: adminUser.nome,
+                    email: process.env.ADMIN_EMAIL
+                },
+                token: token,
+                role: 'admin' // Adiciona a role na resposta
+            };
+        }
+        // --- FIM: Lógica de Login do Admin ---
+
+
         const cliente = await clienteRepository.findByEmail(email);
         if (!cliente) {
-            throw new Error('Credenciais inválidas.'); 
+            throw new Error('Credenciais inválidas.');
         }
 
-        // <<<< REGRA DE BLOQUEIO ADICIONADA >>>>
-        // Verifica se o e-mail do cliente foi verificado antes de prosseguir
         if (!cliente.emailVerificado) {
             throw new Error('Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.');
         }
@@ -54,7 +74,8 @@ class AuthService {
             throw new Error('Credenciais inválidas.');
         }
 
-        const token = jwt.sign({ id: cliente.id }, authConfig.secret, {
+        // Adiciona a role 'cliente' ao token do cliente comum
+        const token = jwt.sign({ id: cliente.id, role: 'cliente' }, authConfig.secret, {
             expiresIn: 86400 // 24 horas
         });
 
@@ -64,15 +85,11 @@ class AuthService {
                 nome: cliente.nome,
                 email: cliente.email
             },
-            token: token
+            token: token,
+            role: 'cliente' // Adiciona a role na resposta
         };
     }
 
-    /**
-     * <<<< NOVA FUNÇÃO >>>>
-     * Verifica um token de e-mail e ativa a conta do usuário.
-     * @param {string} token - O token de verificação recebido por e-mail.
-     */
     async verifyEmail(token) {
         let decoded;
         try {
@@ -81,13 +98,11 @@ class AuthService {
             throw new Error('Token de verificação inválido ou expirado.');
         }
 
-        // Busca o cliente para garantir que ele ainda existe
         const cliente = await clienteRepository.findById(decoded.id);
         if (!cliente) {
             throw new Error('Usuário não encontrado.');
         }
 
-        // Marca o e-mail como verificado no banco de dados
         await clienteRepository.updateEmailVerificado(decoded.id);
 
         return { message: 'E-mail verificado com sucesso!' };

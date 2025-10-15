@@ -21,14 +21,15 @@ class CarteiraController {
             const clienteId = req.params.id;
             const compraRequest = new CompraRequestDTO(req.body);
 
-            if (!compraRequest.produtoId || !compraRequest.quantidade) {
-                return res.status(400).json({ message: 'produtoId e quantidade são obrigatórios.' });
+            // --- MUDANÇA: Validação de 'valor' em vez de 'quantidade' ---
+            if (!compraRequest.produtoId || !compraRequest.valor) {
+                return res.status(400).json({ message: 'produtoId e valor são obrigatórios.' });
             }
 
             const carteiraAtualizada = await carteiraService.comprarAtivo(
                 clienteId,
                 compraRequest.produtoId,
-                compraRequest.quantidade
+                compraRequest.valor // Passando o valor para o service
             );
             
             const carteiraResponse = new CarteiraResponseDTO(carteiraAtualizada);
@@ -67,4 +68,4 @@ class CarteiraController {
     }
 }
 
-module.exports = new CarteiraController();
+module.exports = new CarteiraController();  

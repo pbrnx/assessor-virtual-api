@@ -19,14 +19,14 @@ class CarteiraService {
     }
 
     /**
-     * Realiza a compra de um ativo para um cliente.
+     * Realiza a compra de um ativo para um cliente com base no valor.
      * @param {number} clienteId
      * @param {number} produtoId
-     * @param {number} quantidade
+     * @param {number} valor - O valor monetário a ser investido.
      */
-    async comprarAtivo(clienteId, produtoId, quantidade) {
-        if (!quantidade || quantidade <= 0) {
-            throw new Error('A quantidade deve ser um número positivo.');
+    async comprarAtivo(clienteId, produtoId, valor) {
+        if (!valor || valor <= 0) {
+            throw new Error('O valor da compra deve ser um número positivo.');
         }
 
         // 1. Validar a existência do cliente e do produto
@@ -41,10 +41,17 @@ class CarteiraService {
         }
 
         // 2. Verificar se o cliente tem saldo suficiente
-        const custoTotal = produto.preco * quantidade;
+        const custoTotal = valor; // O custo total é o próprio valor que o cliente quer investir
         if (cliente.saldo < custoTotal) {
             throw new Error('Saldo insuficiente para realizar a compra.');
         }
+        
+        // --- NOVO: Calcula a quantidade de cotas com base no valor ---
+        const quantidade = custoTotal / produto.preco;
+        if (quantidade < 0.00001) { // Evita a compra de frações muito pequenas
+            throw new Error('O valor informado é muito baixo para comprar uma fração mínima deste ativo.');
+        }
+        // -----------------------------------------------------------
 
         // 3. Debitar o valor do saldo do cliente
         const novoSaldo = cliente.saldo - custoTotal;

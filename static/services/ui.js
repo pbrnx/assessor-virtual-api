@@ -119,13 +119,43 @@ export function renderMarketplace(products, riskFilter = 'todos') {
     elements.dashboard.marketplaceGrid.innerHTML = filteredProducts.map(p => `<div class="product-card" data-product-id="${p.id}"><h4>${p.nome}</h4><div class="price">${formatCurrency(p.preco)}</div><div class="details"><span>${p.tipo}</span><span class="risk-badge ${p.risco.toLowerCase()}">${p.risco}</span></div></div>`).join('');
 }
 
+// --- MUDANÇA PRINCIPAL AQUI ---
 export function openBuyModal(product, currentUser, onConfirm) {
-    elements.modals.buy.body.innerHTML = `<h3>Comprar ${product.nome}</h3><div class="product-info"><p><strong>Preço:</strong> ${formatCurrency(product.preco)}</p></div><p class="info-saldo">Seu saldo: ${formatCurrency(currentUser.saldo)}</p><form id="buy-form"><div class="form-group"><label for="buy-quantity">Quantidade</label><input type="number" id="buy-quantity" class="form-input" min="0.0001" step="any" required></div><p>Custo total: <span class="valor-total" id="valor-total-compra">${formatCurrency(0)}</span></p><button type="submit" class="form-button">Confirmar Compra</button></form>`;
-    const quantityInput = document.getElementById('buy-quantity'), totalSpan = document.getElementById('valor-total-compra');
-    quantityInput.addEventListener('input', () => totalSpan.textContent = formatCurrency((parseFloat(quantityInput.value) || 0) * product.preco));
-    document.getElementById('buy-form').addEventListener('submit', (e) => { e.preventDefault(); onConfirm(product.id, parseFloat(quantityInput.value), e.submitter); });
+    elements.modals.buy.body.innerHTML = `
+        <h3>Comprar ${product.nome}</h3>
+        <div class="product-info">
+            <p><strong>Preço da cota:</strong> ${formatCurrency(product.preco)}</p>
+        </div>
+        <p class="info-saldo">Seu saldo: ${formatCurrency(currentUser.saldo)}</p>
+        <form id="buy-form">
+            <div class="form-group">
+                <label for="buy-value">Valor a investir (R$)</label>
+                <input type="number" id="buy-value" class="form-input" min="1" step="any" required placeholder="Ex: 500,00">
+            </div>
+            <p>Quantidade aproximada: <span class="valor-total" id="quantidade-aproximada">0.0000 cotas</span></p>
+            <button type="submit" class="form-button">Confirmar Compra</button>
+        </form>`;
+    
+    const valueInput = document.getElementById('buy-value');
+    const quantitySpan = document.getElementById('quantidade-aproximada');
+    
+    // Calcula a quantidade de cotas em tempo real
+    valueInput.addEventListener('input', () => {
+        const valor = parseFloat(valueInput.value) || 0;
+        const quantidade = valor / product.preco;
+        quantitySpan.textContent = `${quantidade.toFixed(4)} cotas`;
+    });
+    
+    // Envia o VALOR para a função de confirmação
+    document.getElementById('buy-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        onConfirm(product.id, parseFloat(valueInput.value), e.submitter);
+    });
+    
     elements.modals.buy.overlay.classList.remove('hidden');
 }
+// --- FIM DA MUDANÇA ---
+
 
 export function openSellModal(ativo, onConfirm) {
     elements.modals.sell.body.innerHTML = `<h3>Vender ${ativo.nome}</h3><div class="product-info"><p><strong>Preço Atual:</strong> ${formatCurrency(ativo.precoUnitario)}</p></div><p class="info-saldo">Você possui: ${ativo.quantidade.toFixed(4)} cotas</p><form id="sell-form"><div class="form-group"><label for="sell-quantity">Quantidade</label><input type="number" id="sell-quantity" class="form-input" max="${ativo.quantidade}" min="0.0001" step="any" required></div><p>Valor da venda: <span class="valor-total" id="valor-total-venda">${formatCurrency(0)}</span></p><button type="submit" class="form-button danger">Confirmar Venda</button></form>`;
