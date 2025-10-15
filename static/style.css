@@ -453,4 +453,16 @@ body{
   .toast{ top: 70px; padding: 10px 14px; }
   .dialog{ width: min(520px, 94vw); padding: 18px; }
   .dialog__actions{ gap: 8px; margin-top: 14px; }
+
+  #dashboard-header.hero{ gap: 8px; }
+  #dashboard-header .balance{ gap: 8px; }
+
+  /* Se ainda houver aperto, empurre o botão p/ a 2ª linha */
+  #dashboard-header .hero__right .btn{
+    order: 2;
+  }
+  #dashboard-header .balance{
+    order: 1;
+  }
 }
+
