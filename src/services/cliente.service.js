@@ -1,19 +1,24 @@
 // src/services/cliente.service.js
-const clienteRepository = require('../repositories/cliente.repository');
 
 class ClienteService {
+    // O serviço agora recebe sua dependência no construtor
+    constructor(clienteRepository) {
+        this.clienteRepository = clienteRepository;
+    }
 
     async createCliente(clienteData) {
         const { nome, email } = clienteData;
-        const emailExistente = await clienteRepository.findByEmail(email);
+        // Usa a dependência injetada
+        const emailExistente = await this.clienteRepository.findByEmail(email);
         if (emailExistente) {
             throw new Error('Este e-mail já está cadastrado.');
         }
-        return await clienteRepository.create({ nome, email });
+        return await this.clienteRepository.create({ nome, email });
     }
 
     async getClienteById(id) {
-        const cliente = await clienteRepository.findById(id);
+        // Usa a dependência injetada
+        const cliente = await this.clienteRepository.findById(id);
         if (!cliente) {
             throw new Error('Cliente não encontrado.');
         }
@@ -21,43 +26,37 @@ class ClienteService {
     }
 
     async getAllClientes() {
-        return await clienteRepository.findAll();
+        return await this.clienteRepository.findAll();
     }
 
     async updateCliente(id, clienteData) {
         await this.getClienteById(id);
         
-        const emailExistente = await clienteRepository.findByEmail(clienteData.email);
+        const emailExistente = await this.clienteRepository.findByEmail(clienteData.email);
         if (emailExistente && emailExistente.id !== parseInt(id, 10)) {
             throw new Error('O e-mail informado já está em uso por outro cliente.');
         }
 
-        return await clienteRepository.update(id, clienteData);
+        return await this.clienteRepository.update(id, clienteData);
     }
 
     async deleteCliente(id) {
         await this.getClienteById(id);
-        return await clienteRepository.delete(id);
+        return await this.clienteRepository.delete(id);
     }
 
-    /**
-     * NOVO: Adiciona um valor ao saldo do cliente.
-     * @param {number} id - ID do cliente.
-     * @param {number} valor - Valor a ser depositado.
-     */
     async depositarSaldo(id, valor) {
         if (!valor || typeof valor !== 'number' || valor <= 0) {
             throw new Error('O valor do depósito deve ser um número positivo.');
         }
 
-        const cliente = await this.getClienteById(id); // Garante que o cliente existe
+        const cliente = await this.getClienteById(id);
         const novoSaldo = cliente.saldo + valor;
 
-        await clienteRepository.updateSaldo(id, novoSaldo);
-
-        // Retorna o cliente com o saldo atualizado
+        await this.clienteRepository.updateSaldo(id, novoSaldo);
         return await this.getClienteById(id);
     }
 }
 
-module.exports = new ClienteService();
+// ATENÇÃO: A classe é exportada, não mais uma instância.
+module.exports = ClienteService;
