@@ -1,567 +1,567 @@
-openapi: 3.0.0
-info:
-  title: API do Assessor de Investimentos Virtual
-  description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
-  version: 1.0.0
-servers:
-  - url: https://assessor-virtual-api.onrender.com/api
-    description: Deploy no render
-  - url: http://localhost:3000/api
-    description: Servidor de Desenvolvimento Local
+  openapi: 3.0.0
+  info:
+    title: API do Assessor de Investimentos Virtual
+    description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
+    version: 1.0.0
+  servers:
+    - url: https://assessor-virtual-api.onrender.com/api
+      description: Deploy no render
+    - url: http://localhost:3000/api
+      description: Servidor de Desenvolvimento Local
 
-tags:
-  - name: Autenticação
-    description: Operações de registro e login de usuários.
-  - name: Clientes
-    description: Operações de clientes, perfil, saldo e carteira.
-  - name: Produtos de Investimento
-    description: Gerenciamento do catálogo de produtos de investimento.
+  tags:
+    - name: Autenticação
+      description: Operações de registro e login de usuários.
+    - name: Clientes
+      description: Operações de clientes, perfil, saldo e carteira.
+    - name: Produtos de Investimento
+      description: Gerenciamento do catálogo de produtos de investimento.
 
-paths:
-  # --- Rotas de Autenticação ---
-  /auth/register:
-    post:
-      tags: [Autenticação]
-      summary: Registra um novo cliente
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: Cliente registrado com sucesso.
-        '400':
-          description: Dados inválidos.
-        '409':
-          description: E-mail já cadastrado.
-
-  /auth/login:
-    post:
-      tags: [Autenticação]
-      summary: Autentica um cliente e retorna um token JWT
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Login bem-sucedido.
+  paths:
+    # --- Rotas de Autenticação ---
+    /auth/register:
+      post:
+        tags: [Autenticação]
+        summary: Registra um novo cliente
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
-        '401':
-          description: Credenciais inválidas.
+                $ref: '#/components/schemas/RegisterRequest'
+        responses:
+          '201':
+            description: Cliente registrado com sucesso.
+          '400':
+            description: Dados inválidos.
+          '409':
+            description: E-mail já cadastrado.
 
-  # --- Rotas de Clientes (CRUD) ---
-  /clientes:
-    get:
-      tags: [Clientes]
-      summary: Lista todos os clientes cadastrados
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Lista de clientes retornada com sucesso.
+    /auth/login:
+      post:
+        tags: [Autenticação]
+        summary: Autentica um cliente e retorna um token JWT
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                type: array
-                items:
+                $ref: '#/components/schemas/LoginRequest'
+        responses:
+          '200':
+            description: Login bem-sucedido.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/LoginResponse'
+          '401':
+            description: Credenciais inválidas.
+
+    # --- Rotas de Clientes (CRUD) ---
+    /clientes:
+      get:
+        tags: [Clientes]
+        summary: Lista todos os clientes cadastrados
+        security:
+          - bearerAuth: []
+        responses:
+          '200':
+            description: Lista de clientes retornada com sucesso.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ClienteResponse'
+          '401':
+            description: Não autorizado.
+
+    /clientes/{id}:
+      get:
+        tags: [Clientes]
+        summary: Busca um cliente pelo seu ID
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          '200':
+            description: Cliente encontrado.
+            content:
+              application/json:
+                schema:
                   $ref: '#/components/schemas/ClienteResponse'
-        '401':
-          description: Não autorizado.
-
-  /clientes/{id}:
-    get:
-      tags: [Clientes]
-      summary: Busca um cliente pelo seu ID
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
+      put:
+        tags: [Clientes]
+        summary: Atualiza os dados de um cliente (exceto senha)
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: integer
+        requestBody:
           required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Cliente encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
-    put:
-      tags: [Clientes]
-      summary: Atualiza os dados de um cliente (exceto senha)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
+                $ref: '#/components/schemas/ClienteUpdateRequest'
+        responses:
+          '200':
+            description: Cliente atualizado com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ClienteResponse'
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
+      delete:
+        tags: [Clientes]
+        summary: Deleta um cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          '204':
+            description: Cliente deletado com sucesso.
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
+    
+    # --- Rotas de Perfil e Recomendação ---
+    /clientes/{id}/perfil:
+      post:
+        tags: [Clientes]
+        summary: Define o perfil de investidor de um cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        requestBody:
           required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ClienteUpdateRequest'
-      responses:
-        '200':
-          description: Cliente atualizado com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
-    delete:
-      tags: [Clientes]
-      summary: Deleta um cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
+                $ref: '#/components/schemas/PerfilRequest'
+        responses:
+          '200':
+            description: Perfil definido com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PerfilResponse'
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
+
+    /clientes/{id}/recomendacoes:
+      get:
+        tags: [Clientes]
+        summary: Obtém a carteira de investimentos recomendada (sugestão)
+        security:
+          - bearerAuth: []
+        description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente.
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        responses:
+          '200':
+            description: Recomendação gerada com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/RecomendacaoResponse'
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente ou perfil não encontrado.
+
+    /clientes/{id}/recomendacoes/investir:
+      post:
+        tags: [Clientes]
+        summary: Investe o saldo disponível na carteira recomendada
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        requestBody:
           required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Cliente deletado com sucesso.
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
-  
-  # --- Rotas de Perfil e Recomendação ---
-  /clientes/{id}/perfil:
-    post:
-      tags: [Clientes]
-      summary: Define o perfil de investidor de um cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PerfilRequest'
-      responses:
-        '200':
-          description: Perfil definido com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PerfilResponse'
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
+                $ref: '#/components/schemas/InvestirRecomendacaoRequest'
+        responses:
+          '200':
+            description: Investimento realizado com sucesso. Retorna a carteira atualizada.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CarteiraResponse'
+          '400':
+            description: Saldo insuficiente ou erro ao processar.
+          '401':
+            description: Não autorizado.
 
-  /clientes/{id}/recomendacoes:
-    get:
-      tags: [Clientes]
-      summary: Obtém a carteira de investimentos recomendada (sugestão)
-      security:
-        - bearerAuth: []
-      description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente.
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      responses:
-        '200':
-          description: Recomendação gerada com sucesso.
+    # --- Rotas de Saldo e Carteira ---
+    /clientes/{id}/depositar:
+      post:
+        tags: [Clientes]
+        summary: Deposita um valor na conta do cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecomendacaoResponse'
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente ou perfil não encontrado.
+                $ref: '#/components/schemas/DepositoRequest'
+        responses:
+          '200':
+            description: Depósito realizado com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ClienteResponse'
+          '400':
+            description: Valor de depósito inválido.
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
 
-  /clientes/{id}/recomendacoes/investir:
-    post:
-      tags: [Clientes]
-      summary: Investe o saldo disponível na carteira recomendada
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InvestirRecomendacaoRequest'
-      responses:
-        '200':
-          description: Investimento realizado com sucesso. Retorna a carteira atualizada.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CarteiraResponse'
-        '400':
-          description: Saldo insuficiente ou erro ao processar.
-        '401':
-          description: Não autorizado.
+    /clientes/{id}/carteira:
+      get:
+        tags: [Clientes]
+        summary: Busca a carteira de ativos de um cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        responses:
+          '200':
+            description: Carteira retornada com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CarteiraResponse'
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente não encontrado.
 
-  # --- Rotas de Saldo e Carteira ---
-  /clientes/{id}/depositar:
-    post:
-      tags: [Clientes]
-      summary: Deposita um valor na conta do cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DepositoRequest'
-      responses:
-        '200':
-          description: Depósito realizado com sucesso.
+    # --- [CORRIGIDO] Rota para Comprar Ativo ---
+    /clientes/{id}/carteira/comprar:
+      post:
+        tags: [Clientes]
+        summary: Compra um ativo para a carteira do cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClienteResponse'
-        '400':
-          description: Valor de depósito inválido.
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
+                $ref: '#/components/schemas/CompraRequest'
+        responses:
+          '200':
+            description: Compra realizada com sucesso. Retorna a carteira atualizada.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CarteiraResponse'
+          '400':
+            description: Dados da compra inválidos.
+          '401':
+            description: Não autorizado.
+          '402':
+            description: Saldo insuficiente.
+          '404':
+            description: Cliente ou produto não encontrado.
+            
+    # --- [CORRIGIDO] Rota para Vender Ativo ---
+    /clientes/{id}/carteira/vender:
+      post:
+        tags: [Clientes]
+        summary: Vende um ativo da carteira do cliente
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ClienteId'
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendaRequest'
+        responses:
+          '200':
+            description: Venda realizada com sucesso. Retorna a carteira atualizada.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CarteiraResponse'
+          '400':
+            description: Quantidade de venda inválida ou insuficiente.
+          '401':
+            description: Não autorizado.
+          '404':
+            description: Cliente ou ativo na carteira não encontrado.
 
-  /clientes/{id}/carteira:
-    get:
-      tags: [Clientes]
-      summary: Busca a carteira de ativos de um cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      responses:
-        '200':
-          description: Carteira retornada com sucesso.
+    # --- Rotas de Produtos de Investimento (CRUD) ---
+    /investimentos:
+      get:
+        tags: [Produtos de Investimento]
+        summary: Lista todos os produtos de investimento
+        responses:
+          '200':
+            description: Sucesso.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ProdutoInvestimento'
+      post:
+        tags: [Produtos de Investimento]
+        summary: Cria um novo produto de investimento (Ação de Admin)
+        security:
+          - bearerAuth: []
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CarteiraResponse'
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente não encontrado.
-
-  # --- [CORRIGIDO] Rota para Comprar Ativo ---
-  /clientes/{id}/carteira/comprar:
-    post:
-      tags: [Clientes]
-      summary: Compra um ativo para a carteira do cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CompraRequest'
-      responses:
-        '200':
-          description: Compra realizada com sucesso. Retorna a carteira atualizada.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CarteiraResponse'
-        '400':
-          description: Dados da compra inválidos.
-        '401':
-          description: Não autorizado.
-        '402':
-          description: Saldo insuficiente.
-        '404':
-          description: Cliente ou produto não encontrado.
-          
-  # --- [CORRIGIDO] Rota para Vender Ativo ---
-  /clientes/{id}/carteira/vender:
-    post:
-      tags: [Clientes]
-      summary: Vende um ativo da carteira do cliente
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ClienteId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VendaRequest'
-      responses:
-        '200':
-          description: Venda realizada com sucesso. Retorna a carteira atualizada.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CarteiraResponse'
-        '400':
-          description: Quantidade de venda inválida ou insuficiente.
-        '401':
-          description: Não autorizado.
-        '404':
-          description: Cliente ou ativo na carteira não encontrado.
-
-  # --- Rotas de Produtos de Investimento (CRUD) ---
-  /investimentos:
-    get:
-      tags: [Produtos de Investimento]
-      summary: Lista todos os produtos de investimento
-      responses:
-        '200':
-          description: Sucesso.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
+                $ref: '#/components/schemas/ProdutoInvestimentoRequest'
+        responses:
+          '201':
+            description: Produto criado.
+            content:
+              application/json:
+                schema:
                   $ref: '#/components/schemas/ProdutoInvestimento'
-    post:
-      tags: [Produtos de Investimento]
-      summary: Cria um novo produto de investimento (Ação de Admin)
-      security:
-        - bearerAuth: []
-      requestBody:
+
+    /investimentos/{id}:
+      get:
+        tags: [Produtos de Investimento]
+        summary: Busca um produto pelo ID
+        parameters:
+          - $ref: '#/components/parameters/ProdutoId'
+        responses:
+          '200':
+            description: Sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ProdutoInvestimento'
+          '404':
+            description: Produto não encontrado.
+      put:
+        tags: [Produtos de Investimento]
+        summary: Atualiza um produto (Ação de Admin)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ProdutoId'
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoInvestimentoRequest'
+        responses:
+          '200':
+            description: Produto atualizado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ProdutoInvestimento'
+          '404':
+            description: Produto não encontrado.
+      delete:
+        tags: [Produtos de Investimento]
+        summary: Deleta um produto (Ação de Admin)
+        security:
+          - bearerAuth: []
+        parameters:
+          - $ref: '#/components/parameters/ProdutoId'
+        responses:
+          '204':
+            description: Produto deletado.
+          '404':
+            description: Produto não encontrado.
+
+  components:
+    securitySchemes:
+      bearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
+        description: "Insira o token JWT no formato: Bearer {token}"
+
+    parameters:
+      ClienteId:
+        name: id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProdutoInvestimentoRequest'
-      responses:
-        '201':
-          description: Produto criado.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProdutoInvestimento'
-
-  /investimentos/{id}:
-    get:
-      tags: [Produtos de Investimento]
-      summary: Busca um produto pelo ID
-      parameters:
-        - $ref: '#/components/parameters/ProdutoId'
-      responses:
-        '200':
-          description: Sucesso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProdutoInvestimento'
-        '404':
-          description: Produto não encontrado.
-    put:
-      tags: [Produtos de Investimento]
-      summary: Atualiza um produto (Ação de Admin)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ProdutoId'
-      requestBody:
+        description: ID do cliente
+        schema:
+          type: integer
+      ProdutoId:
+        name: id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProdutoInvestimentoRequest'
-      responses:
-        '200':
-          description: Produto atualizado.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProdutoInvestimento'
-        '404':
-          description: Produto não encontrado.
-    delete:
-      tags: [Produtos de Investimento]
-      summary: Deleta um produto (Ação de Admin)
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/ProdutoId'
-      responses:
-        '204':
-          description: Produto deletado.
-        '404':
-          description: Produto não encontrado.
+        description: ID do produto de investimento
+        schema:
+          type: integer
 
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: "Insira o token JWT no formato: Bearer {token}"
-
-  parameters:
-    ClienteId:
-      name: id
-      in: path
-      required: true
-      description: ID do cliente
-      schema:
-        type: integer
-    ProdutoId:
-      name: id
-      in: path
-      required: true
-      description: ID do produto de investimento
-      schema:
-        type: integer
-
-  schemas:
-    RegisterRequest:
-      type: object
-      properties:
-        nome: { type: string, example: "Maria da Silva" }
-        email: { type: string, format: email, example: "maria.silva@email.com" }
-        senha: { type: string, format: password, example: "senhaForte123" }
-      required: [nome, email, senha]
-    LoginRequest:
-      type: object
-      properties:
-        email: { type: string, format: email, example: "maria.silva@email.com" }
-        senha: { type: string, format: password, example: "senhaForte123" }
-      required: [email, senha]
-    LoginResponse:
-      type: object
-      properties:
-        cliente:
-          type: object
-          properties:
-            id: { type: integer, example: 1 }
-            nome: { type: string, example: "Maria da Silva" }
-            email: { type: string, example: "maria.silva@email.com" }
-        token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
-    ClienteUpdateRequest:
-      type: object
-      description: "Dados para atualizar um cliente. Não inclui a senha."
-      properties:
-        nome: { type: string, example: "Maria da Silva Santos" }
-        email: { type: string, example: "maria.santos@email.com" }
-      required: [nome, email]
-    ClienteResponse:
-      type: object
-      properties:
-        id: { type: integer, example: 1 }
-        nome: { type: string, example: "Maria da Silva" }
-        email: { type: string, example: "maria.silva@email.com" }
-        saldo: { type: number, format: float, example: 5000.75 }
-        perfilId: { type: integer, nullable: true, example: 2 }
-    PerfilRequest:
-      type: object
-      properties:
-        respostas:
-          type: object
-          properties:
-            toleranciaRisco: { type: string, enum: [A, B, C], example: "B" }
-            objetivo: { type: string, enum: [A, B, C], example: "C" }
-            conhecimento: { type: string, enum: [A, B, C], example: "A" }
-    PerfilResponse:
-      type: object
-      properties:
-        id: { type: integer, example: 2 }
-        nome: { type: string, example: "Moderado" }
-        descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
-    ProdutoInvestimento:
-      type: object
-      properties:
-        id: { type: integer, example: 3 }
-        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
-        tipo: { type: string, example: "FII" }
-        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
-        preco: { type: number, format: float, example: 162.30 }
-    ProdutoInvestimentoRequest:
-      type: object
-      properties:
-        nome: { type: string, example: "Tesouro IPCA+ 2045" }
-        tipo: { type: string, example: "Renda Fixa" }
-        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
-        preco: { type: number, format: float, example: 105.50 }
-      required: [nome, tipo, risco, preco]
-    ItemRecomendado:
-      type: object
-      properties:
-        produtoId: { type: integer, example: 1 }
-        nome: { type: string, example: "Tesouro Selic" }
-        tipo: { type: string, example: "Renda Fixa" }
-        risco: { type: string, example: "Baixo" }
-        percentualAlocacao: { type: integer, example: 40 }
-    RecomendacaoResponse:
-      type: object
-      properties:
-        perfilInvestidor: { type: string, example: "Moderado" }
-        descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
-        carteiraRecomendada:
-          type: array
-          items:
-            $ref: '#/components/schemas/ItemRecomendado'
-    InvestirRecomendacaoRequest:
-      type: object
-      properties:
-        carteiraRecomendada:
-          type: array
-          items:
-            $ref: '#/components/schemas/ItemRecomendado'
-    DepositoRequest:
-      type: object
-      properties:
-        valor: { type: number, format: float, example: 1500.50 }
-      required: [valor]
-    CompraRequest:
-      type: object
-      properties:
-        produtoId: { type: integer, example: 3 }
-        quantidade: { type: number, format: float, example: 10.5 }
-      required: [produtoId, quantidade]
-    VendaRequest:
-      type: object
-      properties:
-        produtoId: { type: integer, example: 3 }
-        quantidade: { type: number, format: float, example: 5 }
-      required: [produtoId, quantidade]
-    CarteiraItemResponse:
-      type: object
-      properties:
-        produtoId: { type: integer, example: 3 }
-        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
-        tipo: { type: string, example: "FII" }
-        risco: { type: string, example: "Médio" }
-        precoUnitario: { type: number, format: float, example: 162.30 }
-        quantidade: { type: number, format: float, example: 25.5 }
-        valorTotal: { type: number, format: float, example: 4138.65 }
-    CarteiraResponse:
-      type: object
-      properties:
-        ativos:
-          type: array
-          items:
-            $ref: '#/components/schemas/CarteiraItemResponse'
-        valorTotalInvestido: { type: number, format: float, example: 15280.40 }
+    schemas:
+      RegisterRequest:
+        type: object
+        properties:
+          nome: { type: string, example: "Maria da Silva" }
+          email: { type: string, format: email, example: "maria.silva@email.com" }
+          senha: { type: string, format: password, example: "senhaForte123" }
+        required: [nome, email, senha]
+      LoginRequest:
+        type: object
+        properties:
+          email: { type: string, format: email, example: "maria.silva@email.com" }
+          senha: { type: string, format: password, example: "senhaForte123" }
+        required: [email, senha]
+      LoginResponse:
+        type: object
+        properties:
+          cliente:
+            type: object
+            properties:
+              id: { type: integer, example: 1 }
+              nome: { type: string, example: "Maria da Silva" }
+              email: { type: string, example: "maria.silva@email.com" }
+          token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+      ClienteUpdateRequest:
+        type: object
+        description: "Dados para atualizar um cliente. Não inclui a senha."
+        properties:
+          nome: { type: string, example: "Maria da Silva Santos" }
+          email: { type: string, example: "maria.santos@email.com" }
+        required: [nome, email]
+      ClienteResponse:
+        type: object
+        properties:
+          id: { type: integer, example: 1 }
+          nome: { type: string, example: "Maria da Silva" }
+          email: { type: string, example: "maria.silva@email.com" }
+          saldo: { type: number, format: float, example: 5000.75 }
+          perfilId: { type: integer, nullable: true, example: 2 }
+      PerfilRequest:
+        type: object
+        properties:
+          respostas:
+            type: object
+            properties:
+              toleranciaRisco: { type: string, enum: [A, B, C], example: "B" }
+              objetivo: { type: string, enum: [A, B, C], example: "C" }
+              conhecimento: { type: string, enum: [A, B, C], example: "A" }
+      PerfilResponse:
+        type: object
+        properties:
+          id: { type: integer, example: 2 }
+          nome: { type: string, example: "Moderado" }
+          descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+      ProdutoInvestimento:
+        type: object
+        properties:
+          id: { type: integer, example: 3 }
+          nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+          tipo: { type: string, example: "FII" }
+          risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+          preco: { type: number, format: float, example: 162.30 }
+      ProdutoInvestimentoRequest:
+        type: object
+        properties:
+          nome: { type: string, example: "Tesouro IPCA+ 2045" }
+          tipo: { type: string, example: "Renda Fixa" }
+          risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+          preco: { type: number, format: float, example: 105.50 }
+        required: [nome, tipo, risco, preco]
+      ItemRecomendado:
+        type: object
+        properties:
+          produtoId: { type: integer, example: 1 }
+          nome: { type: string, example: "Tesouro Selic" }
+          tipo: { type: string, example: "Renda Fixa" }
+          risco: { type: string, example: "Baixo" }
+          percentualAlocacao: { type: integer, example: 40 }
+      RecomendacaoResponse:
+        type: object
+        properties:
+          perfilInvestidor: { type: string, example: "Moderado" }
+          descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+          carteiraRecomendada:
+            type: array
+            items:
+              $ref: '#/components/schemas/ItemRecomendado'
+      InvestirRecomendacaoRequest:
+        type: object
+        properties:
+          carteiraRecomendada:
+            type: array
+            items:
+              $ref: '#/components/schemas/ItemRecomendado'
+      DepositoRequest:
+        type: object
+        properties:
+          valor: { type: number, format: float, example: 1500.50 }
+        required: [valor]
+      CompraRequest:
+        type: object
+        properties:
+          produtoId: { type: integer, example: 3 }
+          quantidade: { type: number, format: float, example: 10.5 }
+        required: [produtoId, quantidade]
+      VendaRequest:
+        type: object
+        properties:
+          produtoId: { type: integer, example: 3 }
+          quantidade: { type: number, format: float, example: 5 }
+        required: [produtoId, quantidade]
+      CarteiraItemResponse:
+        type: object
+        properties:
+          produtoId: { type: integer, example: 3 }
+          nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+          tipo: { type: string, example: "FII" }
+          risco: { type: string, example: "Médio" }
+          precoUnitario: { type: number, format: float, example: 162.30 }
+          quantidade: { type: number, format: float, example: 25.5 }
+          valorTotal: { type: number, format: float, example: 4138.65 }
+      CarteiraResponse:
+        type: object
+        properties:
+          ativos:
+            type: array
+            items:
+              $ref: '#/components/schemas/CarteiraItemResponse'
+          valorTotalInvestido: { type: number, format: float, example: 15280.40 }

@@ -369,3 +369,52 @@ body{
   outline: 3px solid rgba(79,140,255,0.6);
   outline-offset: 2px;
 }
+
+@media (max-width: 768px){
+  /* Grade do marketplace com largura mínima maior para não esmagar */
+  .cards--market{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .product{
+    padding: 14px;
+    /* garante altura mínima consistente sem deformar conteúdo */
+    min-height: 140px;
+  }
+  .product__head{ margin-bottom: 8px; }
+  .product__title{ font-size: 1rem; }
+  .product__price{ font-size: 1.15rem; }
+  .product__meta{ font-size: .9rem; }
+
+  /* Chips e filtros com melhor toque */
+  .chip{ padding: 8px 10px; font-size: .95rem; }
+}
+
+@media (max-width: 768px){
+  .form{ gap:14px; }
+  .input{
+    padding: 0.8rem 0.9rem;
+    border-radius: 10px;
+  }
+  .btn{
+    padding: 0.8rem 1rem;
+  }
+  .btn--pill{ border-radius: 12px; padding: 0.55rem 0.85rem; }
+}
+
+@media (max-width: 768px){
+  .toast{ top: 70px; padding: 10px 14px; }
+  .dialog{
+    width: min(520px, 94vw);
+    padding: 18px;
+  }
+  .dialog__actions{ gap:8px; margin-top: 14px; }
+}
+
+@media (max-width: 768px){
+  .choice{ padding: 12px; }
+  .choice__ui{ font-size: .98rem; }
+  .quiz__question{ font-size: 1rem; }
+}

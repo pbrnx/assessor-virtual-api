@@ -62,7 +62,7 @@ const sendMail = async (options) => {
  * @param {string} token - O token de redefinição de senha.
  */
 async function sendPasswordResetEmail(to, token) {
-    const resetLink = `https://assessor-virtual-api.onrender.com/?token=${token}&action=resetPassword`;
+    const resetLink = `${process.env.ENVIRONMENT}/?token=${token}&action=resetPassword`;
     
     const mailOptions = {
         to: to,
