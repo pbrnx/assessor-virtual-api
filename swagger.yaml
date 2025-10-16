@@ -57,7 +57,145 @@
           '401':
             description: Credenciais inválidas.
 
+    /auth/refresh-token:
+      post:
+        tags: [Autenticação]
+        summary: Renova o token JWT
+        description: Gera um novo token JWT válido usando o refresh token atual. Útil para manter a sessão do usuário ativa sem necessidade de novo login.
+        security:
+          - bearerAuth: []
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenRequest'
+        responses:
+          '200':
+            description: Token renovado com sucesso.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/LoginResponse'
+          '401':
+            description: Token inválido ou expirado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '403':
+            description: Refresh token revogado ou expirado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
+    /auth/forgot-password:
+      post:
+        tags: [Autenticação]
+        summary: Solicita redefinição de senha
+        description: Envia um e-mail com token temporário para redefinição de senha. O token expira em 1 hora.
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordRequest'
+        responses:
+          '200':
+            description: E-mail de redefinição enviado com sucesso.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message: 
+                      type: string
+                      example: "E-mail com instruções de redefinição enviado com sucesso."
+          '404':
+            description: E-mail não encontrado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '429':
+            description: Muitas tentativas. Aguarde alguns minutos.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
+    /auth/reset-password:
+      post:
+        tags: [Autenticação]
+        summary: Redefine a senha do usuário
+        description: Altera a senha do usuário usando o token temporário recebido por e-mail.
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordRequest'
+        responses:
+          '200':
+            description: Senha redefinida com sucesso.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Senha alterada com sucesso."
+          '400':
+            description: Token inválido ou expirado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '429':
+            description: Muitas tentativas. Aguarde alguns minutos.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
     # --- Rotas de Clientes (CRUD) ---
+    /clientes/me:
+      get:
+        tags: [Clientes]
+        summary: Retorna os dados do cliente autenticado
+        description: Retorna os dados completos do cliente atual, incluindo saldo, perfil e outras informações pessoais.
+        security:
+          - bearerAuth: []
+        responses:
+          '200':
+            description: Dados do cliente retornados com sucesso.
+            content:
+              application/json:
+                schema:
+                  allOf:
+                    - $ref: '#/components/schemas/ClienteResponse'
+                    - type: object
+                      properties:
+                        perfil:
+                          $ref: '#/components/schemas/PerfilResponse'
+                        email_verificado:
+                          type: boolean
+                          example: true
+          '401':
+            description: Não autorizado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '404':
+            description: Cliente não encontrado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+
     /clientes:
       get:
         tags: [Clientes]
@@ -193,6 +331,80 @@
             description: Não autorizado.
           '404':
             description: Cliente ou perfil não encontrado.
+
+    /recomendacoes/user/{userId}:
+      get:
+        tags: [Clientes]
+        summary: Obtém as recomendações específicas para um usuário
+        description: Retorna todas as recomendações personalizadas geradas para o usuário, incluindo o histórico de recomendações anteriores e a atual.
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: userId
+            in: path
+            required: true
+            schema:
+              type: integer
+            description: ID do usuário
+          - name: includeHistory
+            in: query
+            required: false
+            schema:
+              type: boolean
+              default: false
+            description: Se true, inclui o histórico completo de recomendações
+          - name: limit
+            in: query
+            required: false
+            schema:
+              type: integer
+              minimum: 1
+              maximum: 50
+              default: 10
+            description: Limite de recomendações retornadas quando includeHistory=true
+        responses:
+          '200':
+            description: Recomendações do usuário retornadas com sucesso.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    currentRecommendation:
+                      $ref: '#/components/schemas/RecomendacaoResponse'
+                    historicalRecommendations:
+                      type: array
+                      items:
+                        allOf:
+                          - $ref: '#/components/schemas/RecomendacaoResponse'
+                          - type: object
+                            properties:
+                              dataCriacao:
+                                type: string
+                                format: date-time
+                                example: "2025-10-15T14:30:00Z"
+                    metadata:
+                      type: object
+                      properties:
+                        totalRecomendacoes:
+                          type: integer
+                          example: 5
+                        ultimaAtualizacao:
+                          type: string
+                          format: date-time
+                          example: "2025-10-15T14:30:00Z"
+          '401':
+            description: Não autorizado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+          '404':
+            description: Usuário não encontrado.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
 
     /clientes/{id}/recomendacoes/investir:
       post:
@@ -565,3 +777,47 @@
             items:
               $ref: '#/components/schemas/CarteiraItemResponse'
           valorTotalInvestido: { type: number, format: float, example: 15280.40 }
+      
+      RefreshTokenRequest:
+        type: object
+        properties:
+          refreshToken:
+            type: string
+            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        required: [refreshToken]
+
+      ForgotPasswordRequest:
+        type: object
+        properties:
+          email:
+            type: string
+            format: email
+            example: "usuario@email.com"
+        required: [email]
+
+      ResetPasswordRequest:
+        type: object
+        properties:
+          token:
+            type: string
+            example: "reset-token-123"
+          novaSenha:
+            type: string
+            format: password
+            minLength: 8
+            example: "novaSenha123"
+        required: [token, novaSenha]
+
+      ErrorResponse:
+        type: object
+        properties:
+          code:
+            type: string
+            example: "AUTH_ERROR"
+          message:
+            type: string
+            example: "Token inválido ou expirado."
+          details:
+            type: object
+            nullable: true
+            example: null

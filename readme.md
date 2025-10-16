@@ -18,6 +18,24 @@ A documentação dos endpoints pode ser encontrada aqui: https://assessor-virtua
 
 O **Assessor de Investimentos Virtual** é uma aplicação Full Stack que simula uma plataforma de investimentos completa. O projeto consiste em uma API RESTful construída com Node.js e Express, conectada a um banco de dados Oracle, e um frontend dinâmico (SPA - Single Page Application) desenvolvido com Vanilla JavaScript, HTML e CSS.
 
+### Arquitetura e Padrões de Projeto
+
+O projeto segue uma arquitetura em camadas, implementando os princípios SOLID:
+
+- **Single Responsibility**: Cada classe tem uma única responsabilidade
+- **Open/Closed**: Uso de estratégias para diferentes perfis de investidor
+- **Liskov Substitution**: Implementações seguem contratos de interfaces
+- **Interface Segregation**: Interfaces específicas para cada tipo de serviço
+- **Dependency Inversion**: Injeção de dependências nos serviços
+
+### Design Patterns Utilizados
+
+1. **Strategy Pattern**: Implementado nas estratégias de recomendação de investimentos
+2. **Repository Pattern**: Abstração do acesso aos dados
+3. **Factory Pattern**: Criação de instâncias de serviços
+4. **Singleton**: Conexão com banco de dados
+5. **Middleware Pattern**: Interceptação e processamento de requisições
+
 A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-mail, redefinam senhas, definam seu perfil de investidor através de um questionário (suitability), gerenciem um saldo em conta, explorem um marketplace de ativos e montem sua própria carteira de investimentos com funcionalidades de compra e venda.
 
 ---
@@ -57,22 +75,52 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
 ## 🛠️ Tecnologias Utilizadas
 
 ### Backend
--   **Node.js**
--   **Express.js**: Framework para a construção da API REST.
--   **OracleDB (`oracledb`)**: Driver para conexão com o banco de dados Oracle.
--   **JSON Web Token (`jsonwebtoken`)**: Para autenticação baseada em tokens.
--   **bcryptjs**: Para criptografia de senhas.
--   **Nodemailer**: Para o envio de e-mails de verificação e recuperação de senha.
--   **Swagger UI Express**: Para servir a documentação da API.
--   **DotEnv**: Para gerenciamento de variáveis de ambiente.
+-   **Node.js**: Runtime JavaScript (v18+)
+-   **Express.js**: Framework para construção da API REST
+    - Middleware para tratamento de requisições
+    - Roteamento
+    - Tratamento de erros
+-   **OracleDB (`oracledb`)**: Driver para conexão com Oracle Database
+    - Pool de conexões
+    - Transações
+-   **Autenticação e Segurança**:
+    - **JSON Web Token (`jsonwebtoken`)**: Autenticação stateless
+    - **bcryptjs**: Criptografia de senhas
+    - **express-rate-limit**: Limitação de requisições
+    - **helmet**: Headers de segurança
+    - **cors**: Configuração de CORS
+-   **E-mail e Comunicação**:
+    - **Nodemailer**: Envio de e-mails
+    - **Google OAuth2**: Autenticação para envio de e-mails
+-   **Documentação e Desenvolvimento**:
+    - **Swagger UI Express**: Documentação interativa da API
+    - **OpenAPI 3.0**: Especificação da API
+    - **DotEnv**: Gerenciamento de variáveis de ambiente
+-   **Testes**:
+    - **Jest**: Framework de testes
+    - **Supertest**: Testes de integração
+    - **faker-js**: Geração de dados para testes
 
 ### Frontend
 -   **HTML5 / CSS3**
--   **Vanilla JavaScript (ES6+)**: Para criar a experiência de Single Page Application (SPA).
--   **Chart.js**: Biblioteca para a renderização do gráfico de pizza da carteira.
+    - Layout responsivo
+    - Flexbox e Grid
+    - CSS Modules
+-   **JavaScript**:
+    - **Vanilla JS (ES6+)**
+    - **Módulos ES6**
+    - **Async/Await**
+    - **LocalStorage** para persistência
+-   **Bibliotecas**:
+    - **Chart.js**: Visualização de dados
+    - **Axios**: Requisições HTTP
+    - **Day.js**: Manipulação de datas
 
 ### Banco de Dados
 -   **Oracle Database**
+    - Procedures e Triggers
+    - Constraints e Relacionamentos
+    - Índices otimizados
 
 ---
 
@@ -82,7 +130,6 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 ### Pré-requisitos
 -   **Node.js** (versão 18 ou superior)
--   **Oracle Instant Client**: É necessário para que o driver `oracledb` funcione. Certifique-se de que ele esteja instalado e configurado no `PATH` do seu sistema.
 -   Acesso a um **Banco de Dados Oracle**.
 
 ### Passos
@@ -102,29 +149,33 @@ Siga os passos abaixo para rodar o projeto localmente.
     -   Crie um arquivo chamado `.env` na raiz do projeto.
     -   Copie o conteúdo do exemplo abaixo e preencha com suas credenciais do Oracle e outras configurações.
 
+
     **.env.example**
     ```env
     # Configurações do Servidor
     PORT=3000
+    ENVIRONMENT=http://localhost:3000 # ou https://assessor-virtual-api.onrender.com
 
     # Credenciais do Banco de Dados Oracle
     DB_USER=SEU_USUARIO_ORACLE
     DB_PASSWORD=SUA_SENHA_ORACLE
     DB_URL=oracle.fiap.com.br:1521/ORCL
-    
+
     # Chave secreta para JWT
     SECRET=SUA_CHAVE_SECRETA_SUPER_SEGURA
 
-    # Credenciais de Admin
+    # E-mail do projeto (usado para autenticação de envio de e-mails)
+    EMAIL_USER=SEU_EMAIL_GOOGLE
+
+    # Credenciais do Google Cloud (para envio de e-mails)
+    G_CLIENT_ID=SEU_CLIENT_ID_GOOGLE
+    G_CLIENT_SECRET=SEU_CLIENT_SECRET_GOOGLE
+    G_REDIRECT_URI=https://developers.google.com/oauthplayground
+    G_REFRESH_TOKEN=SEU_REFRESH_TOKEN_GOOGLE
+
+    # Credenciais do Administrador
     ADMIN_EMAIL=admin@admin.com
     ADMIN_PASSWORD=admin
-    
-    # Configs do Serviço de Email (ex: Mailtrap, SendGrid)
-    EMAIL_HOST=smtp.mailtrap.io
-    EMAIL_PORT=2525
-    EMAIL_USER=SEU_USER
-    EMAIL_PASS=SUA_SENHA
-    EMAIL_FROM="Assessor Virtual" <no-reply@assessor.com>
     ```
 
 4.  **Configure o Banco de Dados:**
@@ -228,36 +279,171 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 ## 🚀 Uso
 
-Após iniciar o servidor, a aplicação estará disponível nos seguintes endereços:
+### Endpoints Disponíveis
 
--   **Aplicação Frontend**: [http://localhost:3000](http://localhost:3000)
-    > Acesse este link no seu navegador para interagir com a plataforma.
+#### Autenticação
+- `POST /api/auth/register` - Registro de novo usuário
+- `POST /api/auth/login` - Login de usuário
+- `POST /api/auth/forgot-password` - Solicita redefinição de senha
+- `POST /api/auth/reset-password` - Redefine a senha
 
--   **Documentação da API (Swagger)**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
-    > Acesse este link para ver todos os endpoints da API, seus parâmetros, e para testá-los diretamente pelo navegador.
-    <img width="1902" height="950" alt="image" src="https://github.com/user-attachments/assets/9d2e8bb8-2503-47bb-839b-62bfef487032" />
+#### Clientes
+- `GET /api/clientes/me` - Perfil do usuário autenticado
+- `GET /api/clientes/{id}` - Busca cliente por ID
+- `PUT /api/clientes/{id}` - Atualiza dados do cliente
+- `POST /api/clientes/{id}/perfil` - Define perfil do investidor
+
+#### Carteira
+- `GET /api/clientes/{id}/carteira` - Lista ativos da carteira
+- `POST /api/clientes/{id}/carteira/comprar` - Compra ativo
+- `POST /api/clientes/{id}/carteira/vender` - Vende ativo
+
+#### Recomendações
+- `GET /api/clientes/{id}/recomendacoes` - Obtém recomendações
+- `POST /api/clientes/{id}/recomendacoes/investir` - Investe conforme recomendação
+
+### Acessando a Aplicação
+
+-   **Frontend**: [http://localhost:3000](http://localhost:3000)
+    > Interface web completa da plataforma
+
+-   **Swagger UI**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+    > Documentação interativa da API
+
+### Exemplos de Uso
+
+1. **Registro de Usuário**
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "João Silva",
+    "email": "joao@email.com",
+    "senha": "senha123"
+  }'
+```
+
+2. **Login**
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "joao@email.com",
+    "senha": "senha123"
+  }'
+```
+
+3. **Compra de Ativo**
+```bash
+curl -X POST http://localhost:3000/api/clientes/1/carteira/comprar \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "produtoId": 1,
+    "quantidade": 10
+  }'
+```
 
 ---
 
 ## 📂 Estrutura do Projeto
 
-    .
-    ├── src
-    │   ├── api                 # Arquivos de rotas (endpoints)
-    │   ├── config              # Configuração do banco de dados e autenticação
-    │   ├── controllers         # Camada que lida com requisições e respostas
-    │   ├── dtos                # Data Transfer Objects (contratos de dados)
-    │   ├── middlewares         # Middlewares (ex: errorHandler, authJwt)
-    │   ├── models              # Modelos de domínio da aplicação
-    │   ├── repositories        # Camada de acesso ao banco de dados
-    │   └── services            # Camada de regras de negócio
-    ├── static                  # Arquivos do frontend
-    │   ├── services            # Módulos de serviço do frontend (api.js, ui.js, state.js)
-    │   ├── app.js              # Lógica principal do frontend (SPA)
-    │   ├── index.html          # Estrutura da página
-    │   └── style.css           # Estilização
-    ├── .env                    # Arquivo de variáveis de ambiente (local)
+A estrutura do projeto segue os princípios de Clean Architecture e SOLID:
+
+```
+.
+├── src/
+│   ├── api/                    # Rotas e configuração de endpoints
+│   │   ├── auth.routes.js      # Rotas de autenticação
+│   │   ├── carteira.routes.js  # Rotas de carteira
+│   │   └── __tests__/         # Testes de integração das rotas
+│   │
+│   ├── config/                # Configurações do projeto
+│   │   ├── auth.config.js     # Configurações de autenticação
+│   │   └── database.js        # Configuração do banco de dados
+│   │
+│   ├── controllers/          # Controladores da aplicação
+│   │   ├── auth.controller.js
+│   │   ├── carteira.controller.js
+│   │   └── cliente.controller.js
+│   │
+│   ├── dtos/                # Data Transfer Objects
+│   │   ├── auth.dto.js      # DTOs de autenticação
+│   │   ├── carteira.dto.js  # DTOs de carteira
+│   │   └── cliente.dto.js   # DTOs de cliente
+│   │
+│   ├── middlewares/         # Middlewares da aplicação
+│   │   ├── authJwt.js       # Middleware de autenticação JWT
+│   │   └── errorHandler.js  # Tratamento global de erros
+│   │
+│   ├── models/             # Modelos de domínio
+│   │   ├── carteira.model.js
+│   │   ├── cliente.model.js
+│   │   └── produto.model.js
+│   │
+│   ├── repositories/       # Camada de acesso a dados
+│   │   ├── carteira.repository.js
+│   │   └── cliente.repository.js
+│   │
+│   ├── services/          # Lógica de negócio
+│   │   ├── auth.service.js
+│   │   ├── carteira.service.js
+│   │   ├── email.service.js
+│   │   └── __tests__/    # Testes unitários dos serviços
+│   │
+│   └── utils/            # Utilitários e helpers
+│       ├── validators.js
+│       └── helpers.js
+│
+├── static/              # Frontend da aplicação
+│   ├── services/        # Serviços do frontend
+│   │   ├── api.js      # Cliente HTTP
+│   │   ├── auth.js     # Gerenciamento de autenticação
+│   │   └── state.js    # Gerenciamento de estado
+│   │
+│   ├── styles/         # Estilos CSS
+│   │   ├── main.css
+│   │   └── components/
+│   │
+│   ├── app.js         # Entrada da aplicação
+│   └── index.html     # Página principal
+│
+├── tests/             # Testes automatizados
+│   ├── integration/   # Testes de integração
+│   └── unit/         # Testes unitários
+│
+├── docs/             # Documentação adicional
+│   └── postman/      # Coleção do Postman
+│
+├── .env              # Variáveis de ambiente
+├── .env.example      # Exemplo de variáveis de ambiente
+├── package.json      # Dependências e scripts
+└── README.md         # Documentação principal
+```
+
+Cada diretório tem uma responsabilidade específica, seguindo o princípio da Separação de Responsabilidades:
     ├── .gitignore              # Arquivos e pastas a serem ignorados pelo Git
     ├── app.js                  # Ponto de entrada da aplicação (servidor)
     ├── package.json            # Dependências e metadados do projeto
     └── swagger.yaml            # Definição da API no padrão OpenAPI 3.0
+
+---
+
+## 🧪 Testes
+
+Para rodar os testes automatizados (unitários e de integração):
+
+```bash
+npm test
+```
+
+Os testes estão localizados em `src/services/__tests__` e `src/api/__tests__`.
+
+---
+
+## ℹ️ Observações
+
+- Certifique-se de preencher corretamente todas as variáveis do `.env` conforme o exemplo acima.
+- O serviço de e-mail utiliza autenticação OAuth2 do Google Cloud (preencha as credenciais do Google).
+- O link do repositório deve ser entregue garantindo acesso ao professor.
+- Métodos e classes seguem boas práticas de organização e legibilidade.
