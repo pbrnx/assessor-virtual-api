@@ -14,7 +14,7 @@
   },
   "scripts":{
     "start": "node app.js",
-    "test": "jest --detectOpenHandles --forceExit --coverage",
+    "test": "jest --detectOpenHandles --forceExit",
     "prestart": "npm run test"
   },
   "devDependencies": {

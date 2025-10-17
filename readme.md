@@ -181,10 +181,6 @@ Siga os passos abaixo para rodar o projeto localmente.
 4.  **Configure o Banco de Dados:**
     -   Execute o script SQL abaixo no seu banco de dados Oracle para criar todas as tabelas, relacionamentos e inserir os dados iniciais.
     -   *(O script já inclui a lógica para apagar as tabelas antigas, se existirem)*.
-
-    <details>
-    <summary>Clique para ver o Script SQL Completo</summary>
-
     ```sql
     -- Bloco para limpar as tabelas do projeto de investimento antes de criá-las.
     BEGIN
