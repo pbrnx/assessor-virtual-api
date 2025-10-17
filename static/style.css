@@ -552,9 +552,13 @@
     border-top-color: var(--primary);
     animation: spin 900ms linear infinite;
   }
-  body.light-mode .spinner{ 
-    /* Aumentar a opacidade da borda para ser visível no fundo claro */
-    border-color: rgba(0,0,0,0.2); 
+  body.light-mode .spinner{
+    /* Aumentar a opacidade da borda para ser visível no fundo claro
+       e preservar a cor do topo para que a animação seja visível */
+    border: 5px solid rgba(0,0,0,0.12);
+    border-top-color: var(--primary);
+    /* Reafirma a animação caso alguma regra de alta especificidade sobrescreva */
+    animation: spin 900ms linear infinite;
   }
   @keyframes spin{ to{ transform: rotate(360deg); } }
 
