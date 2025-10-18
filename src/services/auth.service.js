@@ -16,7 +16,7 @@ function isSenhaForte(senha) {
         return false;
     }
     // Regex: Pelo menos 1 maiúscula, 1 minúscula, 1 número, 1 caractere especial
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&+\-\/~`'"])[A-Za-z\d@$!%*?&+\-\/~`'"]{8,}$/;
     return regex.test(senha);
 }
 
