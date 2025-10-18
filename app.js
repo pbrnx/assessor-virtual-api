@@ -4,6 +4,8 @@ const path = require('path');
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
+const helmet = require('helmet'); // Já incluído
+const rateLimit = require('express-rate-limit'); // <--- 1. Importe o pacote
 
 const database = require('./src/config/database');
 const apiRoutes = require('./src/api');
@@ -11,23 +13,47 @@ const errorHandler = require('./src/middlewares/errorHandler');
 
 const swaggerDocument = YAML.load('./swagger.yaml');
 
-const helmet = require('helmet');
 
 database.startup().then(() => {
     const app = express();
     app.use(express.json());
+    app.use(helmet()); // Já incluído
 
+    // --- CONFIGURAÇÃO DO RATE LIMITER ---
+    // Aplica um limite geral para todas as requisições API
+    const apiLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // Janela de 15 minutos
+        max: 100, // Limita cada IP a 100 requisições por janela (windowMs)
+        message: 'Muitas requisições originadas deste IP, tente novamente após 15 minutos.',
+        standardHeaders: true, // Retorna informações do limite nos headers `RateLimit-*`
+        legacyHeaders: false, // Desabilita os headers `X-RateLimit-*` (legados)
+    });
+
+    // Aplica um limite mais estrito especificamente para rotas de autenticação
+    const authLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // Janela de 15 minutos
+        max: 10, // Limita cada IP a 10 requisições de autenticação por janela
+        message: 'Muitas tentativas de autenticação originadas deste IP, tente novamente após 15 minutos.',
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+    // --- FIM DA CONFIGURAÇÃO ---
 
 
     // --- ROTAS DA API E DOCUMENTAÇÃO ---
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-    app.use('/api', apiRoutes);
+
+    // Aplica o limiter GERAL a TODAS as rotas /api/*
+    app.use('/api', apiLimiter); // <--- 2. Aplique o limiter geral ANTES das rotas da API
+
+
+    app.use('/api', apiRoutes); // <--- Suas rotas da API
+
 
     // --- SERVIR ARQUIVOS DO FRONTEND ---
     app.use(express.static(path.join(__dirname, 'static')));
 
     // --- ROTA "CATCH-ALL" PARA A SPA ---
-    // CORRIGIDO: Voltamos a usar a expressão regular que é compatível com o seu router.
     app.get(/.*/, (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'index.html'));
     });
