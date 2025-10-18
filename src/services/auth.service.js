@@ -48,7 +48,7 @@ class AuthService {
 
         // Gera um token de verificação
         const verificationToken = jwt.sign({ id: novoCliente.id }, authConfig.secret, { //
-            expiresIn: '7d' // 7 dias para verificar
+            expiresIn: 3600 // 1h pra verificar
         });
 
         // [CORREÇÃO DE PERFORMANCE] Envia o e-mail em segundo plano (Fire-and-Forget)
@@ -69,7 +69,7 @@ class AuthService {
         if (isAdminLogin) {
             const adminUser = { id: 'admin', nome: 'Administrador', role: 'admin' };
             const token = jwt.sign({ id: adminUser.id, role: adminUser.role }, authConfig.secret, { //
-                expiresIn: 86400 // 24 horas
+                expiresIn: 900 // 15 minutos
             });
 
             return {
@@ -99,7 +99,7 @@ class AuthService {
         }
 
         const token = jwt.sign({ id: cliente.id, role: 'cliente' }, authConfig.secret, { //
-            expiresIn: 86400 // 24 horas
+            expiresIn: 1800 // 30 minutos
         });
 
         return {
