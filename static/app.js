@@ -1,27 +1,29 @@
 // static/app.js
 
-import { apiCall } from './services/api.js';
+// Importa ambas as funções de chamada API e funções de estado/UI
+import { apiCall, apiCallWithRefresh } from './services/api.js'; //
 import {
     initState, setSession, clearSession, getCurrentUser,
     updateCurrentUser, getAllProducts, setAllProducts, setUserCarteira, getUserCarteira,
     setUserRecomendacao, getUserRecomendacao,
     getUserTheme, setUserTheme
-} from './services/state.js';
+} from './services/state.js'; //
 import {
     switchView, showAlert, renderWelcomeMessage, renderDashboardHeader,
     renderRecomendacao, renderCarteira, renderMarketplace,
     getElements, openBuyModal, openSellModal, openConfirmModal, closeModal, formatCurrency,
     applyUserTheme,
     forceChartRedraw
-} from './services/ui.js';
+} from './services/ui.js'; //
 
+// Variável global para armazenar token de ação (reset/verify) da URL
 let actionToken = null;
 
 // --- FUNÇÃO DE VALIDAÇÃO DE SENHA ---
 /**
  * Valida a força da senha no frontend.
  * @param {string} senha - A senha a ser validada.
- * @returns {object} - Objeto com o status de cada critério.
+ * @returns {object} - Objeto com o status de cada critério e um booleano `isValid`.
  */
 function validatePasswordStrength(senha) {
     const value = senha || ''; // Garante que é string
@@ -29,8 +31,8 @@ function validatePasswordStrength(senha) {
         length: value.length >= 8,
         lower: /[a-z]/.test(value),
         upper: /[A-Z]/.test(value),
-        number: /\d/.test(value), // Use \d for digits
-        symbol: /[@$!%*?&+-/~`'"]/.test(value), // Added common symbols
+        number: /\d/.test(value), // Usa \d para dígitos
+        symbol: /[@$!%*?&+-/~`'"]/.test(value), // Símbolos comuns adicionados
     };
     // Adiciona uma propriedade geral 'isValid'
     results.isValid = Object.values(results).every(Boolean);
@@ -38,10 +40,15 @@ function validatePasswordStrength(senha) {
 }
 
 // --- FUNÇÃO PARA ATUALIZAR UI DA VALIDAÇÃO (LISTA CHECKLIST) ---
+/**
+ * Atualiza a interface da lista de requisitos de senha.
+ * @param {string} inputId - ID do input de senha ('register-senha' ou 'reset-senha').
+ * @param {object} validationResult - Resultado da função validatePasswordStrength.
+ */
 function updatePasswordFeedback(inputId, validationResult) {
-    const prefix = inputId.includes('register') ? 'register' : 'reset';
+    const prefix = inputId.includes('register') ? 'register' : 'reset'; // Determina o prefixo dos IDs
 
-    const criteria = [
+    const criteria = [ // Mapeamento dos critérios para os IDs dos elementos da lista
         { id: `req-${prefix}-length`, key: 'length' },
         { id: `req-${prefix}-lower`, key: 'lower' },
         { id: `req-${prefix}-upper`, key: 'upper' },
@@ -52,43 +59,31 @@ function updatePasswordFeedback(inputId, validationResult) {
     const inputElement = document.getElementById(inputId);
     const listElement = document.getElementById(`${prefix}-senha-reqs-list`);
 
-    if (!inputElement || !listElement) return; // Sai se os elementos não existirem
+    // Sai se os elementos não existirem no DOM
+    if (!inputElement || !listElement) return;
 
-    // Mostra a lista se o campo tiver foco ou valor
-    // Esconde se não tiver foco E estiver vazio
+    // Controla a visibilidade da lista de requisitos
     const hasFocus = document.activeElement === inputElement;
     const hasValue = inputElement.value.length > 0;
+    listElement.style.display = (hasFocus || hasValue) ? 'block' : 'none';
 
-    if (hasFocus || hasValue) {
-        listElement.style.display = 'block'; // Ou use uma classe CSS para mostrar
-    } else {
-        listElement.style.display = 'none'; // Ou use uma classe CSS para esconder
-    }
-
-    // Atualiza o status visual de cada critério na lista
+    // Atualiza o estado visual (classe 'valid') de cada item da lista
     criteria.forEach(item => {
         const liElement = document.getElementById(item.id);
         if (liElement) {
-            // Adiciona ou remove a classe 'valid' com base no resultado
             liElement.classList.toggle('valid', validationResult[item.key]);
         }
     });
 
-    // Atualiza aria-invalid no input, mas só se houver valor digitado
+    // Atualiza o atributo 'aria-invalid' no input se houver valor digitado
     if (hasValue) {
-        if (validationResult.isValid) {
-            inputElement.removeAttribute('aria-invalid');
-        } else {
-            inputElement.setAttribute('aria-invalid', 'true');
-        }
+        inputElement.setAttribute('aria-invalid', !validationResult.isValid);
     } else {
-        // Se o campo estiver vazio, remove 'aria-invalid' e reseta a lista visualmente
+        // Se vazio, remove 'aria-invalid' e reseta a lista visualmente
         inputElement.removeAttribute('aria-invalid');
         criteria.forEach(item => {
             const liElement = document.getElementById(item.id);
-            if (liElement) {
-                liElement.classList.remove('valid');
-            }
+            if (liElement) liElement.classList.remove('valid');
         });
     }
 }
@@ -96,21 +91,30 @@ function updatePasswordFeedback(inputId, validationResult) {
 
 // --- HANDLERS (lógica de negócio do frontend) ---
 
+/**
+ * Lida com o envio do formulário de login.
+ * @param {Event} event - O evento de submit do formulário.
+ */
 async function handleLogin(event) {
-    event.preventDefault();
-    const button = event.submitter;
+    event.preventDefault(); // Impede o recarregamento da página
+    const button = event.submitter; // Botão que disparou o evento
     const email = event.target.elements['login-email'].value;
     const senha = event.target.elements['login-senha'].value;
     try {
+        // Usa apiCall normal (sem refresh) para o endpoint de login
         const data = await apiCall('/auth/login', { method: 'POST', body: JSON.stringify({ email, senha }) }, button); //
-        setSession(data.cliente, data.token); //
-        await initializeUserFlow();
+        // Armazena ambos os tokens (access e refresh) e os dados do cliente
+        setSession(data.cliente, data.accessToken, data.refreshToken); //
+        await initializeUserFlow(); // Inicia o fluxo do usuário logado
     } catch (error) {
-        showAlert(error.message, 'error'); //
+        showAlert(error.message || 'Erro desconhecido no login.', 'error'); //
     }
 }
 
-// --- MODIFICADO: handleRegister ---
+/**
+ * Lida com o envio do formulário de registro.
+ * @param {Event} event - O evento de submit do formulário.
+ */
 async function handleRegister(event) {
     event.preventDefault();
     const button = event.submitter;
@@ -119,170 +123,216 @@ async function handleRegister(event) {
     const senhaInput = event.target.elements['register-senha'];
     const senha = senhaInput.value;
 
+    // Valida a força da senha antes de enviar
     const passwordValidation = validatePasswordStrength(senha);
-    // Atualiza a UI imediatamente ao tentar submeter (caso não tenha digitado nada)
-    updatePasswordFeedback('register-senha', passwordValidation);
+    updatePasswordFeedback('register-senha', passwordValidation); // Atualiza UI
 
     if (!passwordValidation.isValid) {
         senhaInput.focus(); // Foca no campo se inválido
-        // Garante que a lista de requisitos esteja visível
-         const listElement = document.getElementById('register-senha-reqs-list');
-         if(listElement) listElement.style.display = 'block';
-        return; // Impede o envio do formulário
+        const listElement = document.getElementById('register-senha-reqs-list');
+        if (listElement) listElement.style.display = 'block'; // Garante visibilidade
+        return; // Impede o envio
     }
 
     try {
+        // Usa apiCall normal para registro
         const data = await apiCall('/auth/register', { method: 'POST', body: JSON.stringify({ nome, email, senha }) }, button); //
         showAlert(data.message || 'Cadastro realizado! Verifique seu e-mail.', 'success'); //
-        switchView('login'); //
+        switchView('login'); // Redireciona para login após sucesso
     } catch (error) {
-        // Se o erro vier do backend sobre a senha (apesar da validação front), mostre na UI
-        if (error.message.toLowerCase().includes('senha')) {
-             updatePasswordFeedback('register-senha', {isValid: false}); // Marca como inválido na UI
+        // Trata erro específico de senha vindo do backend
+        if (error.message && error.message.toLowerCase().includes('senha')) {
+             updatePasswordFeedback('register-senha', {isValid: false, length: false, lower: false, upper: false, number: false, symbol: false}); // Marca como inválido na UI
              const listElement = document.getElementById('register-senha-reqs-list');
-             if(listElement) listElement.style.display = 'block'; // Garante visibilidade
-             showAlert(error.message, 'error'); // Mostra o alerta geral também
-        } else {
-            showAlert(error.message, 'error'); //
+             if(listElement) listElement.style.display = 'block';
         }
+        showAlert(error.message || 'Erro ao registrar.', 'error'); //
     }
 }
 
+/**
+ * Lida com o envio do formulário "Esqueci minha senha".
+ * @param {Event} event - O evento de submit do formulário.
+ */
 async function handleForgotPassword(event) {
     event.preventDefault();
     const button = event.submitter;
     const email = event.target.elements['forgot-email'].value;
     try {
+        // Usa apiCall normal
         const data = await apiCall('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }, button); //
         showAlert(data.message, 'success'); //
-        switchView('login'); //
+        switchView('login'); // Volta para login
     } catch (error) {
-        showAlert(error.message, 'error'); //
+        showAlert(error.message || 'Erro ao solicitar redefinição.', 'error'); //
     }
 }
 
-// --- MODIFICADO: handleResetPassword ---
+/**
+ * Lida com o envio do formulário de redefinição de senha.
+ * @param {Event} event - O evento de submit do formulário.
+ */
 async function handleResetPassword(event) {
     event.preventDefault();
     const button = event.submitter;
     const senhaInput = event.target.elements['reset-senha'];
     const novaSenha = senhaInput.value;
-    const token = actionToken;
+    const token = actionToken; // Pega o token armazenado da URL
 
+    if (!token) {
+        showAlert('Token de redefinição inválido ou ausente.', 'error'); //
+        switchView('login'); //
+        return;
+    }
+
+    // Valida a força da nova senha
     const passwordValidation = validatePasswordStrength(novaSenha);
-    // Atualiza a UI imediatamente ao tentar submeter
     updatePasswordFeedback('reset-senha', passwordValidation);
 
     if (!passwordValidation.isValid) {
         senhaInput.focus();
-        // Garante que a lista de requisitos esteja visível
-         const listElement = document.getElementById('reset-senha-reqs-list');
-         if(listElement) listElement.style.display = 'block';
-        return; // Impede o envio do formulário
+        const listElement = document.getElementById('reset-senha-reqs-list');
+        if (listElement) listElement.style.display = 'block';
+        return; // Impede o envio
     }
 
     try {
+        // Usa apiCall normal
         const data = await apiCall('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, novaSenha }) }, button); //
         showAlert(data.message, 'success'); //
+        actionToken = null; // Limpa o token após o uso
         switchView('login'); //
     } catch (error) {
-         // Se o erro vier do backend sobre a senha (apesar da validação front), mostre na UI
-        if (error.message.toLowerCase().includes('senha')) {
-             updatePasswordFeedback('reset-senha', {isValid: false}); // Marca como inválido na UI
+        // Trata erro específico de senha vindo do backend
+        if (error.message && error.message.toLowerCase().includes('senha')) {
+             updatePasswordFeedback('reset-senha', {isValid: false, length: false, lower: false, upper: false, number: false, symbol: false}); // Marca como inválido
              const listElement = document.getElementById('reset-senha-reqs-list');
-             if(listElement) listElement.style.display = 'block'; // Garante visibilidade
-             showAlert(error.message, 'error'); // Mostra o alerta geral também
-        } else {
-            showAlert(error.message, 'error'); //
+             if(listElement) listElement.style.display = 'block';
         }
+        showAlert(error.message || 'Erro ao redefinir senha.', 'error'); //
     }
 }
 
+/**
+ * Lida com a ação de verificação de e-mail usando o token da URL.
+ */
 async function handleVerifyEmail() {
-    const token = actionToken;
+    const token = actionToken; // Pega o token armazenado da URL
+    if (!token) return; // Se não houver token (deveria ter sido tratado por handleUrlActions)
+
     try {
-        showAlert('Verificando sua conta...', 'success'); //
+        showAlert('Verificando sua conta...', 'info'); //
+        // Usa apiCall normal
         const data = await apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }); //
         showAlert(data.message, 'success'); //
     } catch (error) {
-        showAlert(error.message, 'error'); //
+        showAlert(error.message || 'Erro ao verificar e-mail.', 'error'); //
     } finally {
-        switchView('login'); //
+        actionToken = null; // Limpa o token após a tentativa
+        switchView('login'); // Sempre redireciona para login depois
     }
 }
 
+/**
+ * Lida com o envio do formulário do questionário de perfil.
+ */
 async function handleQuestionario(event) {
     event.preventDefault();
     const button = event.submitter;
     const user = getCurrentUser(); //
+    if (!user) {
+        showAlert('Erro: Usuário não autenticado.', 'error'); //
+        return;
+    }
     const formData = new FormData(event.target);
     const respostas = Object.fromEntries(formData.entries());
     try {
-        const perfil = await apiCall(`/clientes/${user.id}/perfil`, { method: 'POST', body: JSON.stringify({ respostas }) }, button); //
-        const updatedUser = { ...user, perfilId: perfil.id };
-        updateCurrentUser(updatedUser); //
-        await loadDashboard();
+        // --- USA apiCallWithRefresh ---
+        const perfil = await apiCallWithRefresh(`/clientes/${user.id}/perfil`, { method: 'POST', body: JSON.stringify({ respostas }) }, button); //
+        // --- FIM DA MUDANÇA ---
+
+        // Atualiza o usuário localmente com o perfilId retornado pela API
+        if (perfil && perfil.id) {
+             const updatedUser = { ...user, perfilId: perfil.id };
+             updateCurrentUser(updatedUser); //
+        } else {
+             console.warn("API de perfil não retornou ID, usuário local pode não estar atualizado.");
+        }
+        await loadDashboard(); // Recarrega o dashboard com os dados atualizados
     } catch (error) {
-        showAlert(error.message, 'error'); //
+         // O erro de sessão expirada já será tratado dentro de apiCallWithRefresh
+        if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao definir perfil.', 'error'); //
+        }
     }
 }
 
-async function handleCompra(produtoId, valor, button) { // Modificado para receber valor
+/**
+ * Lida com a confirmação de compra de um ativo (chamado pelo modal).
+ * @param {number} produtoId - ID do produto a comprar.
+ * @param {number} valor - Valor monetário a investir.
+ * @param {HTMLElement} button - Botão de confirmação do modal.
+ */
+async function handleCompra(produtoId, valor, button) {
     const idNum = Number(produtoId);
-    const valNum = Number(valor); // Usa valor
+    const valNum = Number(valor);
 
+    // Validações básicas
     if (isNaN(idNum) || idNum <= 0) {
         showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error'); //
         return;
     }
-    // Valida valor
     if (isNaN(valNum) || valNum <= 0) {
         showAlert('O valor para compra deve ser um número positivo.', 'error'); //
         return;
     }
+    const user = getCurrentUser(); //
+    if (!user) {
+        showAlert('Erro: Usuário não autenticado.', 'error'); //
+        return;
+    }
 
-    // Payload agora envia 'valor' em vez de 'quantidade'
-    // --- CORREÇÃO: O BACKEND ESPERA 'quantidade', PRECISAMOS CALCULAR ---
-    // Precisamos buscar o preço do produto aqui ou passar o objeto produto para handleCompra
-    // Vamos assumir que temos o preço (precisaria ajustar openBuyModal para passar o preço ou produto)
-    // Para simplificar agora, VOU REVERTER TEMPORARIAMENTE para enviar QUANTIDADE
-    // E você precisará ajustar openBuyModal para calcular e enviar quantidade
-    // OU ajustar o backend (carteira.controller.js e carteira.service.js) para aceitar VALOR
-    // **** ESCOLHENDO AJUSTAR O PAYLOAD ENVIADO (NECESSITA MUDANÇA EM openBuyModal) ****
-     let quantidadeCalculada;
-     // Para isso funcionar, openBuyModal precisa ser ajustado para passar o product.preco
-     // Ex: onConfirm(product.id, parseFloat(valueInput.value), product.preco, e.submitter);
-     // E handleCompra receberia: async function handleCompra(produtoId, valor, precoUnitario, button) {
-     // if (precoUnitario && precoUnitario > 0) {
-     //     quantidadeCalculada = valNum / precoUnitario;
-     // } else {
-     //     showAlert('Erro: Preço do produto indisponível.', 'error'); return;
-     // }
-     // const payload = { produtoId: idNum, quantidade: quantidadeCalculada }; // Envia quantidade
+    // --- CÁLCULO DA QUANTIDADE ---
+    // O backend atual espera 'quantidade', então calculamos aqui
+    const products = getAllProducts(); //
+    const product = products.find(p => p.id === idNum);
+    if (!product || !product.preco || product.preco <= 0) {
+        showAlert('Não foi possível obter o preço atual do produto para calcular a quantidade.', 'error'); //
+        return;
+    }
+    const quantidadeCalculada = valNum / product.preco;
+    // --- FIM CÁLCULO ---
 
-    // ****** SOLUÇÃO MAIS SIMPLES AGORA: DEIXAR COMO ESTAVA ANTES ******
-    // ASSUMINDO QUE openBuyModal AINDA ENVIA QUANTIDADE DIRETAMENTE
-    const payload = { produtoId: idNum, quantidade: valNum }; // MANTENDO COMO ANTES (valNum aqui é a QUANTIDADE vinda de openBuyModal)
-
+    const payload = { produtoId: idNum, quantidade: quantidadeCalculada }; // Envia 'quantidade'
 
     try {
-        await apiCall(`/clientes/${getCurrentUser().id}/carteira/comprar`, { //
+        // --- USA apiCallWithRefresh ---
+        await apiCallWithRefresh(`/clientes/${user.id}/carteira/comprar`, { //
             method: 'POST',
             body: JSON.stringify(payload)
         }, button);
-        showAlert('Compra realizada com sucesso!'); //
+        // --- FIM DA MUDANÇA ---
+        showAlert('Compra realizada com sucesso!', 'success'); //
         closeModal('buy'); //
-        await initializeUserFlow();
+        await initializeUserFlow(); // Recarrega dados do dashboard
     } catch (error) {
-        showAlert(error.message, 'error'); //
+        if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao realizar compra.', 'error'); //
+        }
     }
 }
 
-
+/**
+ * Lida com a confirmação de venda de um ativo (chamado pelo modal).
+ * @param {number} produtoId - ID do produto a vender.
+ * @param {number} quantidade - Quantidade de cotas a vender.
+ * @param {HTMLElement} button - Botão de confirmação do modal.
+ */
 async function handleVenda(produtoId, quantidade, button) {
     const idNum = Number(produtoId);
     const qtdNum = Number(quantidade);
 
+    // Validações básicas
     if (isNaN(idNum) || idNum <= 0) {
         showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error'); //
         return;
@@ -291,115 +341,177 @@ async function handleVenda(produtoId, quantidade, button) {
         showAlert('A quantidade para venda deve ser um número positivo.', 'error'); //
         return;
     }
+    const user = getCurrentUser(); //
+     if (!user) {
+        showAlert('Erro: Usuário não autenticado.', 'error'); //
+        return;
+    }
 
     const payload = { produtoId: idNum, quantidade: qtdNum };
 
     try {
-        await apiCall(`/clientes/${getCurrentUser().id}/carteira/vender`, { //
+        // --- USA apiCallWithRefresh ---
+        await apiCallWithRefresh(`/clientes/${user.id}/carteira/vender`, { //
             method: 'POST',
             body: JSON.stringify(payload)
         }, button);
-        showAlert('Venda realizada com sucesso!'); //
-        closeModal('sell'); //
-        closeModal('confirm'); //
-        await initializeUserFlow();
+        // --- FIM DA MUDANÇA ---
+        showAlert('Venda realizada com sucesso!', 'success'); //
+        closeModal('sell'); // Fecha modal de venda
+        // closeModal('confirm'); // Fecha modal de confirmação (se houver um antes)
+        await initializeUserFlow(); // Recarrega dados
     } catch (error) {
-        showAlert(error.message, 'error'); //
+         if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao realizar venda.', 'error'); //
+        }
     }
 }
 
+/**
+ * Lida com o envio do formulário de depósito.
+ * @param {Event} event - O evento de submit do formulário.
+ */
 async function handleDeposito(event) {
     event.preventDefault();
     const button = event.submitter;
     const valor = parseFloat(event.target.elements['deposit-amount'].value);
     if (!valor || valor <= 0) {
-        showAlert('Por favor, insira um valor de depósito válido.', 'error'); //
+        showAlert('Por favor, insira um valor de depósito válido e positivo.', 'error'); //
         return;
     }
+     const user = getCurrentUser(); //
+     if (!user) {
+        showAlert('Erro: Usuário não autenticado.', 'error'); //
+        return;
+    }
+
     try {
-        await apiCall(`/clientes/${getCurrentUser().id}/depositar`, { method: 'POST', body: JSON.stringify({ valor }) }, button); //
-        showAlert('Depósito realizado com sucesso!'); //
+        // --- USA apiCallWithRefresh ---
+        await apiCallWithRefresh(`/clientes/${user.id}/depositar`, { method: 'POST', body: JSON.stringify({ valor }) }, button); //
+        // --- FIM DA MUDANÇA ---
+        showAlert('Depósito realizado com sucesso!', 'success'); //
         closeModal('deposit'); //
-        await initializeUserFlow();
+        await initializeUserFlow(); // Recarrega dados
     } catch (error) {
-        showAlert(error.message, 'error'); //
+        if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao realizar depósito.', 'error'); //
+        }
     }
 }
 
+/**
+ * Lida com o clique no botão "Investir com 1 clique" (investir na recomendação).
+ * @param {Event} event - O evento de clique no botão.
+ */
 async function handleInvestirRecomendacao(event) {
-    const button = event.target;
+    const button = event.target.closest('button'); // Pega o botão clicado
     const user = getCurrentUser(); //
     const recomendacao = getUserRecomendacao(); //
 
-    if (!recomendacao || !recomendacao.carteiraRecomendada || recomendacao.carteiraRecomendada.length === 0) { //
+    if (!user) {
+         showAlert('Erro: Usuário não autenticado.', 'error'); //
+         return;
+    }
+    if (!recomendacao || !recomendacao.carteiraRecomendada || recomendacao.carteiraRecomendada.length === 0) {
         showAlert('Não foi possível encontrar a carteira recomendada para investir.', 'error'); //
         return;
     }
-
-    if (!user.saldo || user.saldo <= 0) { //
+    if (!user.saldo || user.saldo <= 0) {
         showAlert('Você não tem saldo suficiente para investir.', 'error'); //
         return;
     }
 
+    // Abre modal de confirmação
     openConfirmModal( //
         `Tem certeza que deseja investir todo o seu saldo de ${formatCurrency(user.saldo)} na carteira recomendada?`, //
-        async () => {
+        async () => { // Função a ser executada se o usuário confirmar
             try {
+                // Prepara o payload com a carteira recomendada
                 const payload = { carteiraRecomendada: recomendacao.carteiraRecomendada }; //
-                await apiCall(`/clientes/${user.id}/recomendacoes/investir`, { //
+                // --- USA apiCallWithRefresh ---
+                await apiCallWithRefresh(`/clientes/${user.id}/recomendacoes/investir`, { //
                     method: 'POST',
                     body: JSON.stringify(payload)
-                }, button);
+                }, button); // Passa o botão original para desabilitar/habilitar
+                // --- FIM DA MUDANÇA ---
                 showAlert('Investimento realizado com sucesso!', 'success'); //
-                await initializeUserFlow();
+                await initializeUserFlow(); // Recarrega dados
             } catch (error) {
-                showAlert(error.message, 'error'); //
+                if (!error.message || !error.message.includes('Sessão expirada')) {
+                    showAlert(error.message || 'Erro ao investir na recomendação.', 'error'); //
+                }
             }
         }
     );
 }
 
+/**
+ * Lida com o clique no botão "Recalcular Perfil".
+ */
 async function handleRecalcularRecomendacao(event) {
-    switchView('questionario'); //
+    switchView('questionario'); // Simplesmente muda para a tela do questionário
 }
 
+/**
+ * Lida com o clique no botão de alternar tema (Light/Dark).
+ */
 function handleThemeToggle() {
     const currentTheme = getUserTheme(); //
     const newTheme = currentTheme === 'dark-mode' ? 'light-mode' : 'dark-mode';
-    setUserTheme(newTheme); //
-    applyUserTheme(newTheme); //
-    forceChartRedraw(); //
+    setUserTheme(newTheme); // Salva a nova preferência
+    applyUserTheme(newTheme); // Aplica o novo tema visualmente
+    forceChartRedraw(); // Força o gráfico a redesenhar com as cores do novo tema
 }
 
+/**
+ * Carrega todos os dados necessários para exibir o dashboard.
+ */
 async function loadDashboard() {
     const user = getCurrentUser(); //
+    if (!user) { // Verificação extra
+        console.error("Tentativa de carregar dashboard sem usuário.");
+        switchView('login'); //
+        return;
+    }
     try {
+        // --- USA apiCallWithRefresh PARA DADOS PROTEGIDOS e apiCall PARA PÚBLICOS ---
         const [userDetails, recomendacaoData, produtosData, carteiraData] = await Promise.all([
-            apiCall(`/clientes/${user.id}`), //
-            apiCall(`/clientes/${user.id}/recomendacoes`), //
-            apiCall('/investimentos'), //
-            apiCall(`/clientes/${user.id}/carteira`), //
+            apiCallWithRefresh(`/clientes/${user.id}`),               // Detalhes do usuário (protegido)
+            apiCallWithRefresh(`/clientes/${user.id}/recomendacoes`), // Recomendações (protegido)
+            apiCall('/investimentos'),                           // Lista de produtos (público)
+            apiCallWithRefresh(`/clientes/${user.id}/carteira`),      // Carteira do usuário (protegido)
         ]);
+        // --- FIM DA MUDANÇA ---
 
+        // Atualiza o estado global com os dados recebidos
         updateCurrentUser(userDetails); //
         setAllProducts(produtosData); //
         setUserCarteira(carteiraData); //
         setUserRecomendacao(recomendacaoData); //
 
+        // Renderiza os componentes do dashboard com os dados atualizados
         renderDashboardHeader(userDetails, recomendacaoData); //
         renderRecomendacao(recomendacaoData); //
         renderCarteira(carteiraData); //
         renderMarketplace(produtosData); //
-        switchView('dashboard'); //
+        switchView('dashboard'); // Exibe a view do dashboard
     } catch (error) {
-        if (error.message !== 'Não autorizado') showAlert(error.message, 'error'); //
+        // Evita mostrar alerta duplicado se o erro já foi tratado pelo apiCallWithRefresh
+        if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao carregar dados do dashboard.', 'error'); //
+             // Considerar redirecionar para login se o erro for grave ou persistente
+             // clearSession(); switchView('login');
+        }
     }
 }
 
-// --- MODIFICADO: setupEventListeners ---
+/**
+ * Configura todos os event listeners da aplicação.
+ */
 function setupEventListeners() {
     const elements = getElements(); //
 
+    // Formulários
     elements.forms.login.addEventListener('submit', handleLogin);
     elements.forms.register.addEventListener('submit', handleRegister);
     elements.forms.forgotPassword.addEventListener('submit', handleForgotPassword);
@@ -407,170 +519,213 @@ function setupEventListeners() {
     elements.forms.questionario.addEventListener('submit', handleQuestionario);
     elements.forms.deposit.addEventListener('submit', handleDeposito);
 
-    // --- Validação dinâmica de senha para Registro ---
-    const registerSenhaInput = document.getElementById('register-senha');
-    if (registerSenhaInput) {
-        const listElement = document.getElementById('register-senha-reqs-list');
-        registerSenhaInput.addEventListener('input', () => {
-            const validationResult = validatePasswordStrength(registerSenhaInput.value);
-            updatePasswordFeedback('register-senha', validationResult);
-        });
-        registerSenhaInput.addEventListener('focus', () => {
-            if(listElement) listElement.style.display = 'block';
-            const validationResult = validatePasswordStrength(registerSenhaInput.value); // Atualiza no foco
-            updatePasswordFeedback('register-senha', validationResult);
-        });
-        registerSenhaInput.addEventListener('blur', () => { // Esconde se sair e estiver vazio
-             if(listElement && !registerSenhaInput.value) listElement.style.display = 'none';
-        });
-    }
+    // Validação dinâmica de senha (Registro e Reset)
+    ['register', 'reset'].forEach(prefix => {
+        const senhaInput = document.getElementById(`${prefix}-senha`);
+        if (senhaInput) {
+            const listElement = document.getElementById(`${prefix}-senha-reqs-list`);
+            senhaInput.addEventListener('input', () => updatePasswordFeedback(`${prefix}-senha`, validatePasswordStrength(senhaInput.value)));
+            senhaInput.addEventListener('focus', () => {
+                if (listElement) listElement.style.display = 'block';
+                updatePasswordFeedback(`${prefix}-senha`, validatePasswordStrength(senhaInput.value));
+            });
+            senhaInput.addEventListener('blur', () => {
+                if (listElement && !senhaInput.value) listElement.style.display = 'none';
+            });
+        }
+    });
 
-    // --- Validação dinâmica de senha para Reset ---
-    const resetSenhaInput = document.getElementById('reset-senha');
-    if (resetSenhaInput) {
-         const listElement = document.getElementById('reset-senha-reqs-list');
-        resetSenhaInput.addEventListener('input', () => {
-            const validationResult = validatePasswordStrength(resetSenhaInput.value);
-            updatePasswordFeedback('reset-senha', validationResult);
-        });
-         resetSenhaInput.addEventListener('focus', () => {
-             if(listElement) listElement.style.display = 'block';
-              const validationResult = validatePasswordStrength(resetSenhaInput.value); // Atualiza no foco
-             updatePasswordFeedback('reset-senha', validationResult);
-        });
-        resetSenhaInput.addEventListener('blur', () => { // Esconde se sair e estiver vazio
-             if(listElement && !resetSenhaInput.value) listElement.style.display = 'none';
-        });
-    }
-    // ---------------------------------------------
-
+    // Links de Navegação entre views de autenticação
     elements.links.showRegister.addEventListener('click', (e) => { e.preventDefault(); switchView('register'); }); //
     elements.links.showLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); }); //
     elements.links.showForgotPassword.addEventListener('click', (e) => { e.preventDefault(); switchView('forgotPassword'); }); //
     elements.links.backToLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); }); //
 
+    // Botão de Logout
     elements.userSession.logoutButton.addEventListener('click', () => { clearSession(); switchView('login'); }); //
 
+    // Botão de Tema
     if (elements.userSession.themeToggleButton) {
         elements.userSession.themeToggleButton.addEventListener('click', handleThemeToggle);
     }
 
+    // Botão Abrir Modal Depósito
     const depositBtn = document.getElementById('deposit-btn');
     if (depositBtn) {
         depositBtn.addEventListener('click', () => {
-            closeModal('deposit'); //
-            elements.modals.deposit.overlay.classList.remove('overlay--hidden');
+             // Limpa campo valor ao abrir modal (opcional)
+             const amountInput = document.getElementById('deposit-amount');
+             if(amountInput) amountInput.value = '';
+            elements.modals.deposit.overlay.classList.remove('overlay--hidden'); // Mostra o modal
         });
     }
 
+    // Filtros do Marketplace
     elements.dashboard.marketplaceFilters.addEventListener('click', (e) => {
         if (e.target.matches('.chip')) {
-            const activeButton = document.querySelector('.chip.chip--active');
+            const activeButton = elements.dashboard.marketplaceFilters.querySelector('.chip.chip--active');
             if (activeButton) activeButton.classList.remove('chip--active');
             e.target.classList.add('chip--active');
-            renderMarketplace(getAllProducts(), e.target.dataset.risk); //
+            renderMarketplace(getAllProducts(), e.target.dataset.risk); // Re-renderiza o marketplace com o filtro
         }
     });
 
+    // Cliques nos Cards do Marketplace (para abrir modal de compra)
     elements.dashboard.marketplaceGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.product');
         if (card) {
             const productId = parseInt(card.dataset.productId, 10);
+            const user = getCurrentUser(); //
             const product = getAllProducts().find(p => p.id === productId); //
-            // --- AJUSTE NECESSÁRIO AQUI ---
-            // Passar o preço para handleCompra se a API esperar quantidade
-            // Se a API foi ajustada para valor, manter como está em openBuyModal
-            if (product) openBuyModal(product, getCurrentUser(), handleCompra); // Assumindo que openBuyModal envia VALOR e handleCompra espera VALOR
-            //
+            if (product && user) {
+                // Passa o produto completo, usuário e a função handleCompra como callback
+                openBuyModal(product, user, handleCompra); //
+            } else {
+                console.error("Produto ou usuário não encontrado para abrir modal de compra.");
+            }
         }
     });
 
+    // Cliques nos Botões "Vender" da Carteira
     elements.dashboard.carteiraContainer.addEventListener('click', (e) => {
         const sellBtn = e.target.closest('.btn--sell');
+        if (!sellBtn) return; // Sai se não clicou no botão vender
+
         const carteira = getUserCarteira(); //
-        if (!carteira || !sellBtn) return;
+        if (!carteira) return; // Sai se a carteira não estiver carregada
 
         const productId = parseInt(sellBtn.dataset.productId, 10);
-        const ativo = carteira.ativos.find(a => a.produtoId === productId); //
+        const ativo = carteira.ativos.find(a => a.produtoId === productId); // Encontra o ativo na carteira
         if (ativo) {
+            // Passa o ativo encontrado e a função handleVenda como callback
             openSellModal(ativo, handleVenda); //
+        } else {
+            console.error("Ativo não encontrado na carteira para venda.");
         }
     });
 
+    // Botões de Ação do Dashboard
     elements.dashboard.investirRecomendacaoBtn.addEventListener('click', handleInvestirRecomendacao);
     elements.dashboard.recalcularRecomendacaoBtn.addEventListener('click', handleRecalcularRecomendacao);
 
+    // Fechar Modais (clicando fora ou no botão X)
     Object.values(elements.modals).forEach(modal => {
-        if (modal.overlay) modal.overlay.addEventListener('click', (e) => { if (e.target === modal.overlay) closeModal(modal.overlay.id.split('-')[0]); }); //
-        if (modal.closeBtn) modal.closeBtn.addEventListener('click', () => closeModal(modal.overlay.id.split('-')[0])); //
+        // Fecha clicando no overlay (fundo)
+        if (modal.overlay) {
+            modal.overlay.addEventListener('click', (e) => {
+                if (e.target === modal.overlay) { // Garante que clicou no overlay, não no conteúdo
+                    closeModal(modal.overlay.id.split('-')[0]); // Extrai o nome do modal do ID (ex: 'buy-modal' -> 'buy')
+                }
+            });
+        }
+        // Fecha clicando no botão 'X'
+        if (modal.closeBtn) {
+            modal.closeBtn.addEventListener('click', () => closeModal(modal.overlay.id.split('-')[0])); //
+        }
     });
 
+    // Botão Cancelar do Modal de Confirmação
     const cancelBtn = document.getElementById('confirm-modal-cancel-btn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => closeModal('confirm')); //
     }
 }
 
+/**
+ * Inicializa o fluxo do usuário após login ou recarregamento da página com sessão ativa.
+ * Busca dados do usuário e decide se mostra o questionário ou o dashboard.
+ */
 async function initializeUserFlow() {
     const user = getCurrentUser(); //
-    if (!user) {
+    if (!user || !user.id) { // Verifica se user e user.id existem
+        console.log("initializeUserFlow: Nenhum usuário encontrado, redirecionando para login.");
+        clearSession(); // Garante que tudo está limpo
         switchView('login'); //
         return;
     }
-    renderWelcomeMessage(user.nome); //
-    applyUserTheme(getUserTheme()); //
+
+    renderWelcomeMessage(user.nome); // Mostra "Olá, [Nome]"
+    applyUserTheme(getUserTheme()); // Aplica o tema salvo
 
     try {
-        const userDetails = await apiCall(`/clientes/${user.id}`); //
-        updateCurrentUser(userDetails); //
-        if (userDetails.perfilId) { //
-            await loadDashboard();
+        // --- USA apiCallWithRefresh ---
+        // Busca os detalhes MAIS ATUAIS do usuário (incluindo perfilId)
+        const userDetails = await apiCallWithRefresh(`/clientes/${user.id}`); //
+        // --- FIM DA MUDANÇA ---
+
+        updateCurrentUser(userDetails); // Atualiza o estado com os dados mais recentes
+
+        // Verifica se o perfil do investidor já foi definido
+        if (userDetails.perfilId) {
+            await loadDashboard(); // Carrega e mostra o dashboard
         } else {
-            switchView('questionario'); //
+            switchView('questionario'); // Mostra o questionário se o perfil não estiver definido
         }
     } catch (error) {
-        if (error.message !== 'Não autorizado') {
-            showAlert(error.message, 'error'); //
+        // O erro de sessão expirada já será tratado dentro de apiCallWithRefresh
+        if (!error.message || !error.message.includes('Sessão expirada')) {
+            showAlert(error.message || 'Erro ao buscar dados iniciais do usuário.', 'error'); //
+            // Em caso de erro grave, pode ser útil deslogar
+            // clearSession(); switchView('login');
         }
     }
 }
 
+/**
+ * Verifica se há ações pendentes na URL (reset de senha, verificação de e-mail).
+ * @returns {Promise<boolean>} - True se uma ação da URL foi tratada, False caso contrário.
+ */
 async function handleUrlActions() {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const action = urlParams.get('action');
 
+    // Se não houver token ou ação na URL, não faz nada
     if (!token || !action) return false;
 
+    // Armazena o token globalmente para uso posterior (ex: handleResetPassword)
     actionToken = token;
+    // Limpa os parâmetros da URL para evitar reprocessamento
     window.history.replaceState({}, document.title, window.location.pathname);
 
     if (action === 'resetPassword') {
-        switchView('resetPassword'); //
-        return true;
+        switchView('resetPassword'); // Mostra a tela de redefinição de senha
+        return true; // Indica que uma ação foi tratada
     }
     if (action === 'verifyEmail') {
-        await handleVerifyEmail();
-        return true;
+        await handleVerifyEmail(); // Chama a função que faz a chamada API para verificar
+        return true; // Indica que uma ação foi tratada
     }
+
+    // Se a ação não for reconhecida, limpa o token e continua
+    actionToken = null;
     return false;
 }
 
+/**
+ * Função principal que inicializa a aplicação.
+ */
 async function main() {
-    setupEventListeners();
-    initState(); //
-    applyUserTheme(getUserTheme()); //
+    setupEventListeners(); // Configura todos os listeners de eventos
+    initState(); // Carrega o estado inicial da sessão e tema
+    applyUserTheme(getUserTheme()); // Aplica o tema visualmente
 
+    // Verifica e trata ações da URL antes de verificar a sessão
     const urlActionHandled = await handleUrlActions();
     if (urlActionHandled) {
-        return;
+        // Se uma ação da URL foi tratada (ex: reset, verify),
+        // a própria função de tratamento (handleVerifyEmail, ou o submit de handleResetPassword)
+        // cuidará de redirecionar para o login ao final.
+        return; // Interrompe a execução aqui.
     }
 
+    // Se não havia ação na URL, verifica se há um usuário logado
     if (getCurrentUser()) { //
-        await initializeUserFlow();
+        await initializeUserFlow(); // Tenta carregar os dados do usuário logado
     } else {
-        switchView('login'); //
+        switchView('login'); // Se não houver usuário, mostra a tela de login
     }
 }
 
+// Inicia a aplicação quando o script é carregado
 main();
