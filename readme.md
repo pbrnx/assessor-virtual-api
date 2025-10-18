@@ -23,25 +23,25 @@ O **Assessor de Investimentos Virtual** é uma aplicação Full Stack que simula
 
 O projeto segue uma arquitetura em camadas, implementando os princípios SOLID:
 
-- **Single Responsibility**: Cada classe tem uma única responsabilidade
-- **Open/Closed**: Uso de estratégias para diferentes perfis de investidor
-- **Liskov Substitution**: Implementações seguem contratos de interfaces
-- **Interface Segregation**: Interfaces específicas para cada tipo de serviço
-- **Dependency Inversion**: Injeção de dependências nos serviços
+-   **Single Responsibility**: Cada classe tem uma única responsabilidade (ex: `AuthService`, `CarteiraService`).
+-   **Open/Closed**: Uso de estratégias para diferentes perfis de investidor.
+-   **Liskov Substitution**: (Verificável pela conformidade das Strategies, embora não formalmente via interfaces JS).
+-   **Interface Segregation**: (Aplicável conceitualmente na definição das responsabilidades dos serviços).
+-   **Dependency Inversion**: Injeção de dependências nos serviços (ex: Repositório injetado no Serviço).
 
 ### Design Patterns e Arquitetura
 
-1. **Repository Pattern**: Abstração do acesso aos dados através dos repositories
-   - Exemplo: `cliente.repository.js`, `carteira.repository.js`
-2. **DTO Pattern**: Transferência e validação de dados entre camadas
-   - Exemplo: `auth.dto.js`, `carteira.dto.js`
-3. **Middleware Pattern**: Interceptação e processamento de requisições
-   - Rate limiting em rotas de autenticação
-   - Validação de JWT e roles
-4. **Singleton**: Conexão com banco de dados usando pool de conexões
-5. **Service Layer**: Encapsulamento da lógica de negócios
-   - Serviços especializados para cada domínio
-   - Separação clara de responsabilidades
+1.  **Repository Pattern**: Abstração do acesso aos dados através dos repositories.
+    * Exemplo: `cliente.repository.js`, `carteira.repository.js`.
+2.  **DTO Pattern**: Transferência e validação de dados entre camadas.
+    * Exemplo: `auth.dto.js`, `carteira.dto.js`.
+3.  **Middleware Pattern**: Interceptação e processamento de requisições.
+    * Rate limiting em rotas de autenticação.
+    * Validação de JWT e roles.
+4.  **Pool de Conexões (Implícito no `database.js`)**: Gerenciamento eficiente de conexões com o banco. (Nota: Singleton não é exatamente o termo, mas Pool Pattern sim).
+5.  **Service Layer**: Encapsulamento da lógica de negócios.
+    * Serviços especializados para cada domínio.
+    * Separação clara de responsabilidades.
 
 A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-mail, redefinam senhas, definam seu perfil de investidor através de um questionário (suitability), gerenciem um saldo em conta, explorem um marketplace de ativos e montem sua própria carteira de investimentos com funcionalidades de compra e venda.
 
@@ -53,7 +53,7 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
     -   Cadastro e login de usuários com senhas criptografadas.
     -   **Verificação de E-mail**: Processo de ativação de conta via token enviado por e-mail para garantir a autenticidade do usuário.
     -   **Recuperação de Senha**: Funcionalidade de "Esqueci minha senha" que envia um link de redefinição por e-mail.
-    -   **Autenticação JWT**: Uso de JSON Web Tokens para proteger as rotas da API, garantindo que apenas usuários autenticados acessem seus dados.
+    -   **Autenticação JWT**: Uso de JSON Web Tokens (Access e Refresh Tokens) para proteger as rotas da API.
     -   **Controle de Acesso por Papel (Role-Based)**: Distinção entre usuários "cliente" e "admin", com rotas específicas protegidas para administradores (como a gestão de produtos de investimento).
 
 -   **❓ Perfil de Investidor (Suitability)**: Questionário para determinar o perfil do investidor (Conservador, Moderado, Arrojado).
@@ -84,48 +84,48 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
 ### Backend
 -   **Node.js**: Runtime JavaScript (v18+)
 -   **Express.js**: Framework para construção da API REST
-    - Middleware para tratamento de requisições
-    - Roteamento
-    - Tratamento de erros
+    -   Middleware para tratamento de requisições
+    -   Roteamento
+    -   Tratamento de erros
 -   **OracleDB (`oracledb`)**: Driver para conexão com Oracle Database
-    - Pool de conexões
-    - Transações
+    -   Pool de conexões
+    -   (Transações não explicitamente mostradas, mas possíveis com o driver)
 -   **Autenticação e Segurança**:
-    - **JSON Web Token (`jsonwebtoken`)**: Autenticação stateless
-    - **bcryptjs**: Criptografia de senhas
-    - **express-rate-limit**: Limitação de requisições
-    - **helmet**: Headers de segurança
+    -   **JSON Web Token (`jsonwebtoken`)**: Autenticação stateless (Access/Refresh Tokens).
+    -   **bcryptjs**: Criptografia de senhas.
+    -   **express-rate-limit**: Limitação de requisições.
+    -   **helmet**: Headers de segurança.
 -   **E-mail e Comunicação**:
-    - **Nodemailer**: Envio de e-mails
-    - **Google OAuth2**: Autenticação para envio de e-mails
+    -   **Nodemailer**: Usado indiretamente via `googleapis` e `MailComposer` para envio de e-mails.
+    -   **Google APIs (`googleapis`)**: Autenticação OAuth2 para envio de e-mails via Gmail API.
 -   **Documentação e Desenvolvimento**:
-    - **Swagger UI Express**: Documentação interativa da API
-    - **OpenAPI 3.0**: Especificação da API
-    - **DotEnv**: Gerenciamento de variáveis de ambiente
+    -   **Swagger UI Express**: Documentação interativa da API.
+    -   **OpenAPI 3.0 (`yamljs`)**: Especificação da API em YAML.
+    -   **DotEnv**: Gerenciamento de variáveis de ambiente.
 -   **Testes**:
-    - Testes de integração para rotas de autenticação
-    - Testes unitários para serviços
+    -   **Jest**: Framework de testes.
+    -   **Supertest**: Testes de integração HTTP.
+    -   Testes de integração para rotas de autenticação.
+    -   Testes unitários para serviços.
 
 ### Frontend
 -   **HTML5 / CSS3**
-    - Layout responsivo
-    - Flexbox e Grid
-    - Tema claro/escuro
+    -   Layout responsivo.
+    -   Flexbox e Grid.
+    -   Tema claro/escuro.
 -   **JavaScript**:
-    - **Vanilla JS (ES6+)**
-    - **Módulos ES6**
-    - **Async/Await**
-    - **LocalStorage** para persistência
+    -   **Vanilla JS (ES6+)**.
+    -   **Módulos ES6**.
+    -   **Async/Await**.
+    -   **LocalStorage / SessionStorage** para persistência.
+    -   **Fetch API** (em vez de Axios) para requisições HTTP.
 -   **Bibliotecas**:
-    - **Chart.js**: Visualização de dados
-    - **Axios**: Requisições HTTP
-    - **Day.js**: Manipulação de datas
+    -   **Chart.js**: Visualização de dados.
 
 ### Banco de Dados
 -   **Oracle Database**
-    - Procedures e Triggers
-    - Constraints e Relacionamentos
-    - Índices otimizados
+    -   Constraints e Relacionamentos (visível no script SQL).
+    -   (Procedures, Triggers, Índices otimizados - não verificáveis diretamente nos arquivos fornecidos, mas práticas comuns).
 
 ---
 
@@ -149,39 +149,45 @@ Siga os passos abaixo para rodar o projeto localmente.
     ```bash
     npm install
     ```
+   
 
 3.  **Configure as variáveis de ambiente:**
     -   Crie um arquivo chamado `.env` na raiz do projeto.
-    -   Copie o conteúdo do exemplo abaixo e preencha com suas credenciais do Oracle e outras configurações.
+    -   Copie o conteúdo do exemplo abaixo e preencha com suas credenciais do Oracle e outras configurações. (Nota: O arquivo `.env.example` não está no repositório, use este bloco como guia).
 
-
-    **.env.example**
+    **.env (Exemplo)**
     ```env
     # Configurações do Servidor
     PORT=3000
-    ENVIRONMENT=http://localhost:3000 # ou https://assessor-virtual-api.onrender.com
+    ENVIRONMENT=http://localhost:3000 # ou [https://assessor-virtual-api.onrender.com](https://assessor-virtual-api.onrender.com)
 
     # Credenciais do Banco de Dados Oracle
     DB_USER=SEU_USUARIO_ORACLE
     DB_PASSWORD=SUA_SENHA_ORACLE
     DB_URL=oracle.fiap.com.br:1521/ORCL
 
-    # Chave secreta para JWT
-    SECRET=SUA_CHAVE_SECRETA_SUPER_SEGURA
+    # Chaves secretas para JWT (DEVEM SER DIFERENTES E SEGURAS)
+    SECRET=SUA_CHAVE_SECRETA_PRINCIPAL_SUPER_SEGURA
+    REFRESH_SECRET=SUA_CHAVE_SECRETA_REFRESH_SUPER_SEGURA
 
-    # E-mail do projeto (usado para autenticação de envio de e-mails)
+    # Configuração de Expiração JWT (em segundos)
+    JWT_EXPIRATION=1800 # 30 minutos
+    JWT_REFRESH_EXPIRATION=604800 # 7 dias
+
+    # E-mail do projeto (usado para autenticação de envio de e-mails via Gmail API)
     EMAIL_USER=SEU_EMAIL_GOOGLE
 
-    # Credenciais do Google Cloud (para envio de e-mails)
+    # Credenciais do Google Cloud OAuth2 (para envio de e-mails via Gmail API)
     G_CLIENT_ID=SEU_CLIENT_ID_GOOGLE
     G_CLIENT_SECRET=SEU_CLIENT_SECRET_GOOGLE
-    G_REDIRECT_URI=https://developers.google.com/oauthplayground
-    G_REFRESH_TOKEN=SEU_REFRESH_TOKEN_GOOGLE
+    G_REDIRECT_URI=[https://developers.google.com/oauthplayground](https://developers.google.com/oauthplayground)
+    G_REFRESH_TOKEN=SEU_REFRESH_TOKEN_GOOGLE_OBTIDO_NO_PLAYGROUND
 
-    # Credenciais do Administrador
+    # Credenciais do Administrador (para login direto via API)
     ADMIN_EMAIL=admin@admin.com
     ADMIN_PASSWORD=admin
     ```
+   
 
 4.  **Configure o Banco de Dados:**
     -   Execute o script SQL abaixo no seu banco de dados Oracle para criar todas as tabelas, relacionamentos e inserir os dados iniciais.
@@ -239,7 +245,7 @@ Siga os passos abaixo para rodar o projeto localmente.
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         cliente_id NUMBER(19) NOT NULL,
         produto_id NUMBER(19) NOT NULL,
-        quantidade NUMBER(19, 8) NOT NULL, -- <<<<<<< CORREÇÃO APLICADA AQUI
+        quantidade NUMBER(19, 8) NOT NULL, -- Precisão para cotas fracionadas
         CONSTRAINT fk_carteira_cliente FOREIGN KEY (cliente_id) REFERENCES investimento_cliente(id) ON DELETE CASCADE,
         CONSTRAINT fk_carteira_produto FOREIGN KEY (produto_id) REFERENCES investimento_produto(id) ON DELETE CASCADE,
         CONSTRAINT uq_carteira_cliente_produto UNIQUE (cliente_id, produto_id)
@@ -250,7 +256,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_perfil (nome, descricao) VALUES ('Moderado', 'Busca um equilíbrio entre segurança e rentabilidade.');
     INSERT INTO investimento_perfil (nome, descricao) VALUES ('Arrojado', 'Tolera altos riscos em busca de maior rentabilidade.');
 
-    -- Inserir Produtos de Investimento
+    -- Inserir Produtos de Investimento (Exemplos)
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro Selic', 'Renda Fixa', 'Baixo', 108.50);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB PagSeguro', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário HGLG11', 'FII', 'Médio', 162.30);
@@ -266,6 +272,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Apple (AAPL34)', 'BDR', 'Alto', 85.40);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Bitcoin (BTC)', 'Cripto', 'Alto', 150000.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ethereum (ETH)', 'Cripto', 'Alto', 9500.00);
+    -- Adicione mais produtos conforme necessário...
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro IPCA+', 'Renda Fixa', 'Baixo', 105.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Bradesco', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário KNRI11', 'FII', 'Médio', 150.20);
@@ -275,7 +282,6 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Itaú', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário HGBS11', 'FII', 'Médio', 130.80);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Financeiro', 'Ações', 'Alto', 92.30);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('ETF IVVB11 (S&P 500)', 'Ações', 'Alto', 255.80);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Microsoft (MSFT34)', 'BDR', 'Alto', 110.50);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Amazon (AMZO34)', 'BDR', 'Alto', 95.30);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Cardano (ADA)', 'Cripto', 'Alto', 3.10);
@@ -287,15 +293,14 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Tesla (TSLA34)', 'BDR', 'Alto', 145.60);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ripple (XRP)', 'Cripto', 'Alto', 2.20);
 
-
     COMMIT;
     ```
-    </details>
 
 5.  **Inicie o servidor:**
     ```bash
     node app.js
     ```
+   
 
 ---
 
@@ -321,8 +326,8 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 #### Carteira (Requer Autenticação)
 - `GET /api/clientes/{id}/carteira` - Lista ativos da carteira (Dono ou Admin)
-- `POST /api/clientes/{id}/carteira/comprar` - Compra ativo (Dono ou Admin)
-- `POST /api/clientes/{id}/carteira/vender` - Vende ativo (Dono ou Admin)
+- `POST /api/clientes/{id}/carteira/comprar` - Compra ativo por valor (Dono ou Admin)
+- `POST /api/clientes/{id}/carteira/vender` - Vende ativo por quantidade (Dono ou Admin)
 
 #### Recomendações (Requer Autenticação)
 - `GET /api/clientes/{id}/recomendacoes` - Obtém recomendações (Dono ou Admin)
@@ -337,45 +342,48 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 ### Acessando a Aplicação
 
--   **Frontend**: [http://localhost:3000](http://localhost:3000)
+-   **Frontend**: `http://localhost:3000` (ou o valor de `ENVIRONMENT`)
     > Interface web completa da plataforma
 
--   **Swagger UI**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+-   **Swagger UI**: `http://localhost:3000/api-docs` (ou `ENVIRONMENT`/api-docs)
     > Documentação interativa da API
 
 ### Exemplos de Uso
 
-1. **Registro de Usuário**
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "João Silva",
-    "email": "joao@email.com",
-    "senha": "senha123"
-  }'
-```
+1.  **Registro de Usuário**
+    ```bash
+    curl -X POST http://localhost:3000/api/auth/register \
+      -H "Content-Type: application/json" \
+      -d '{
+        "nome": "João Silva",
+        "email": "joao@email.com",
+        "senha": "SenhaValida123@"
+      }'
+    ```
 
-2. **Login**
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "joao@email.com",
-    "senha": "senha123"
-  }'
-```
+2.  **Login**
+    ```bash
+    curl -X POST http://localhost:3000/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "joao@email.com",
+        "senha": "SenhaValida123@"
+      }'
+    ```
 
-3. **Compra de Ativo**
-```bash
-curl -X POST http://localhost:3000/api/clientes/1/carteira/comprar \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "produtoId": 1,
-    "quantidade": 10
-  }'
-```
+3.  **Compra de Ativo por Valor** (Ajustado para enviar 'valor')
+    ```bash
+    # Primeiro, obtenha o ${TOKEN} do login
+    curl -X POST http://localhost:3000/api/clientes/{id_do_cliente}/carteira/comprar \
+      -H "Authorization: Bearer ${TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "produtoId": 1,
+        "valor": 500.00
+      }'
+    ```
+    *(Nota: Embora o exemplo use `valor`, a API atualmente espera `quantidade` no corpo. O backend faz a conversão internamente.)*
+
 
 ---
 
