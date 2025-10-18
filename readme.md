@@ -1,5 +1,6 @@
 # Assessor de Investimentos Virtual
-<img width="1902" height="952" alt="image" src="https://github.com/user-attachments/assets/9cc01489-d989-4878-9a85-f66c53c2e802" />
+<img width="1887" height="943" alt="image" src="https://github.com/user-attachments/assets/958f11fe-bf72-42ef-b471-0525b9e5cdc2" />
+
 
 ## Integrantes
 - Nome: Pedro Augusto Carneiro Barone Bomfim - RM: 99781
@@ -182,7 +183,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     -   Execute o script SQL abaixo no seu banco de dados Oracle para criar todas as tabelas, relacionamentos e inserir os dados iniciais.
     -   *(O script já inclui a lógica para apagar as tabelas antigas, se existirem)*.
     ```sql
-    -- Bloco para limpar as tabelas do projeto de investimento antes de criá-las.
+     -- Bloco para limpar as tabelas do projeto de investimento antes de criá-las.
     BEGIN
         EXECUTE IMMEDIATE 'DROP TABLE investimento_carteira CASCADE CONSTRAINTS';
         EXECUTE IMMEDIATE 'DROP TABLE investimento_cliente CASCADE CONSTRAINTS';
@@ -261,6 +262,27 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Apple (AAPL34)', 'BDR', 'Alto', 85.40);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Bitcoin (BTC)', 'Cripto', 'Alto', 150000.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ethereum (ETH)', 'Cripto', 'Alto', 9500.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro IPCA+', 'Renda Fixa', 'Baixo', 105.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Bradesco', 'Renda Fixa', 'Baixo', 100.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário KNRI11', 'FII', 'Médio', 150.20);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Energia', 'Ações', 'Alto', 78.50);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Ações da Vale', 'Ações', 'Alto', 65.40);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Santander', 'Renda Fixa', 'Baixo', 100.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Itaú', 'Renda Fixa', 'Baixo', 100.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário HGBS11', 'FII', 'Médio', 130.80);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Financeiro', 'Ações', 'Alto', 92.30);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('ETF IVVB11 (S&P 500)', 'Ações', 'Alto', 255.80);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Microsoft (MSFT34)', 'BDR', 'Alto', 110.50);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Amazon (AMZO34)', 'BDR', 'Alto', 95.30);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Cardano (ADA)', 'Cripto', 'Alto', 3.10);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Solana (SOL)', 'Cripto', 'Alto', 150.00);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro Prefixado 2029', 'Renda Fixa', 'Baixo', 102.50);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário VISC11', 'FII', 'Médio', 120.90);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Internacional', 'Ações', 'Alto', 88.70);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Ações da Petrobras PN', 'Ações', 'Alto', 35.80);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Tesla (TSLA34)', 'BDR', 'Alto', 145.60);
+    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ripple (XRP)', 'Cripto', 'Alto', 2.20);
+
 
     COMMIT;
     ```
