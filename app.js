@@ -11,9 +11,13 @@ const errorHandler = require('./src/middlewares/errorHandler');
 
 const swaggerDocument = YAML.load('./swagger.yaml');
 
+const helmet = require('helmet');
+
 database.startup().then(() => {
     const app = express();
     app.use(express.json());
+
+
 
     // --- ROTAS DA API E DOCUMENTAÇÃO ---
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

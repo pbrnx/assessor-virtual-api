@@ -98,7 +98,7 @@ async function sendPasswordResetEmail(to, token) {
  * @param {string} token - O token de verificação.
  */
 async function sendAccountVerificationEmail(to, token) {
-    const verificationLink = `https://assessor-virtual-api.onrender.com/?token=${token}&action=verifyEmail`;
+    const verificationLink = `${process.env.ENVIRONMENT}/?token=${token}&action=verifyEmail`;
     
     const mailOptions = {
         to: to,

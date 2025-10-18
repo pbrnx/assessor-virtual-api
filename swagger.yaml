@@ -1,823 +1,857 @@
-  openapi: 3.0.0
-  info:
-    title: API do Assessor de Investimentos Virtual
-    description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
-    version: 1.0.0
-  servers:
-    - url: https://assessor-virtual-api.onrender.com/api
-      description: Deploy no render
-    - url: http://localhost:3000/api
-      description: Servidor de Desenvolvimento Local
+openapi: 3.0.0
+info:
+  title: API do Assessor de Investimentos Virtual
+  description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
+  version: 1.0.0
+servers:
+  - url: https://assessor-virtual-api.onrender.com/api
+    description: Deploy no render
+  - url: http://localhost:3000/api
+    description: Servidor de Desenvolvimento Local
 
-  tags:
-    - name: Autenticação
-      description: Operações de registro e login de usuários.
-    - name: Clientes
-      description: Operações de clientes, perfil, saldo e carteira.
-    - name: Produtos de Investimento
-      description: Gerenciamento do catálogo de produtos de investimento.
+tags:
+  - name: Autenticação
+    description: Operações de registro e login de usuários.
+  - name: Clientes
+    description: Operações de clientes, perfil, saldo e carteira.
+  - name: Produtos de Investimento
+    description: Gerenciamento do catálogo de produtos de investimento.
 
-  paths:
-    # --- Rotas de Autenticação ---
-    /auth/register:
-      post:
-        tags: [Autenticação]
-        summary: Registra um novo cliente
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegisterRequest'
-        responses:
-          '201':
-            description: Cliente registrado com sucesso.
-          '400':
-            description: Dados inválidos.
-          '409':
-            description: E-mail já cadastrado.
-
-    /auth/login:
-      post:
-        tags: [Autenticação]
-        summary: Autentica um cliente e retorna um token JWT
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginRequest'
-        responses:
-          '200':
-            description: Login bem-sucedido.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/LoginResponse'
-          '401':
-            description: Credenciais inválidas.
-
-    /auth/refresh-token:
-      post:
-        tags: [Autenticação]
-        summary: Renova o token JWT
-        description: Gera um novo token JWT válido usando o refresh token atual. Útil para manter a sessão do usuário ativa sem necessidade de novo login.
-        security:
-          - bearerAuth: []
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefreshTokenRequest'
-        responses:
-          '200':
-            description: Token renovado com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/LoginResponse'
-          '401':
-            description: Token inválido ou expirado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '403':
-            description: Refresh token revogado ou expirado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-
-    /auth/forgot-password:
-      post:
-        tags: [Autenticação]
-        summary: Solicita redefinição de senha
-        description: Envia um e-mail com token temporário para redefinição de senha. O token expira em 1 hora.
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForgotPasswordRequest'
-        responses:
-          '200':
-            description: E-mail de redefinição enviado com sucesso.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message: 
-                      type: string
-                      example: "E-mail com instruções de redefinição enviado com sucesso."
-          '404':
-            description: E-mail não encontrado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '429':
-            description: Muitas tentativas. Aguarde alguns minutos.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-
-    /auth/reset-password:
-      post:
-        tags: [Autenticação]
-        summary: Redefine a senha do usuário
-        description: Altera a senha do usuário usando o token temporário recebido por e-mail.
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResetPasswordRequest'
-        responses:
-          '200':
-            description: Senha redefinida com sucesso.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Senha alterada com sucesso."
-          '400':
-            description: Token inválido ou expirado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '429':
-            description: Muitas tentativas. Aguarde alguns minutos.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-
-    # --- Rotas de Clientes (CRUD) ---
-    /clientes/me:
-      get:
-        tags: [Clientes]
-        summary: Retorna os dados do cliente autenticado
-        description: Retorna os dados completos do cliente atual, incluindo saldo, perfil e outras informações pessoais.
-        security:
-          - bearerAuth: []
-        responses:
-          '200':
-            description: Dados do cliente retornados com sucesso.
-            content:
-              application/json:
-                schema:
-                  allOf:
-                    - $ref: '#/components/schemas/ClienteResponse'
-                    - type: object
-                      properties:
-                        perfil:
-                          $ref: '#/components/schemas/PerfilResponse'
-                        email_verificado:
-                          type: boolean
-                          example: true
-          '401':
-            description: Não autorizado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '404':
-            description: Cliente não encontrado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-
-    /clientes:
-      get:
-        tags: [Clientes]
-        summary: Lista todos os clientes cadastrados
-        security:
-          - bearerAuth: []
-        responses:
-          '200':
-            description: Lista de clientes retornada com sucesso.
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/ClienteResponse'
-          '401':
-            description: Não autorizado.
-
-    /clientes/{id}:
-      get:
-        tags: [Clientes]
-        summary: Busca um cliente pelo seu ID
-        security:
-          - bearerAuth: []
-        parameters:
-          - name: id
-            in: path
-            required: true
-            schema:
-              type: integer
-        responses:
-          '200':
-            description: Cliente encontrado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ClienteResponse'
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-      put:
-        tags: [Clientes]
-        summary: Atualiza os dados de um cliente (exceto senha)
-        security:
-          - bearerAuth: []
-        parameters:
-          - name: id
-            in: path
-            required: true
-            schema:
-              type: integer
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClienteUpdateRequest'
-        responses:
-          '200':
-            description: Cliente atualizado com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ClienteResponse'
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-      delete:
-        tags: [Clientes]
-        summary: Deleta um cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - name: id
-            in: path
-            required: true
-            schema:
-              type: integer
-        responses:
-          '204':
-            description: Cliente deletado com sucesso.
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-    
-    # --- Rotas de Perfil e Recomendação ---
-    /clientes/{id}/perfil:
-      post:
-        tags: [Clientes]
-        summary: Define o perfil de investidor de um cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PerfilRequest'
-        responses:
-          '200':
-            description: Perfil definido com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/PerfilResponse'
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-
-    /clientes/{id}/recomendacoes:
-      get:
-        tags: [Clientes]
-        summary: Obtém a carteira de investimentos recomendada (sugestão)
-        security:
-          - bearerAuth: []
-        description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente.
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        responses:
-          '200':
-            description: Recomendação gerada com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/RecomendacaoResponse'
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente ou perfil não encontrado.
-
-    /recomendacoes/user/{userId}:
-      get:
-        tags: [Clientes]
-        summary: Obtém as recomendações específicas para um usuário
-        description: Retorna todas as recomendações personalizadas geradas para o usuário, incluindo o histórico de recomendações anteriores e a atual.
-        security:
-          - bearerAuth: []
-        parameters:
-          - name: userId
-            in: path
-            required: true
-            schema:
-              type: integer
-            description: ID do usuário
-          - name: includeHistory
-            in: query
-            required: false
-            schema:
-              type: boolean
-              default: false
-            description: Se true, inclui o histórico completo de recomendações
-          - name: limit
-            in: query
-            required: false
-            schema:
-              type: integer
-              minimum: 1
-              maximum: 50
-              default: 10
-            description: Limite de recomendações retornadas quando includeHistory=true
-        responses:
-          '200':
-            description: Recomendações do usuário retornadas com sucesso.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    currentRecommendation:
-                      $ref: '#/components/schemas/RecomendacaoResponse'
-                    historicalRecommendations:
-                      type: array
-                      items:
-                        allOf:
-                          - $ref: '#/components/schemas/RecomendacaoResponse'
-                          - type: object
-                            properties:
-                              dataCriacao:
-                                type: string
-                                format: date-time
-                                example: "2025-10-15T14:30:00Z"
-                    metadata:
-                      type: object
-                      properties:
-                        totalRecomendacoes:
-                          type: integer
-                          example: 5
-                        ultimaAtualizacao:
-                          type: string
-                          format: date-time
-                          example: "2025-10-15T14:30:00Z"
-          '401':
-            description: Não autorizado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-          '404':
-            description: Usuário não encontrado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ErrorResponse'
-
-    /clientes/{id}/recomendacoes/investir:
-      post:
-        tags: [Clientes]
-        summary: Investe o saldo disponível na carteira recomendada
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvestirRecomendacaoRequest'
-        responses:
-          '200':
-            description: Investimento realizado com sucesso. Retorna a carteira atualizada.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/CarteiraResponse'
-          '400':
-            description: Saldo insuficiente ou erro ao processar.
-          '401':
-            description: Não autorizado.
-
-    # --- Rotas de Saldo e Carteira ---
-    /clientes/{id}/depositar:
-      post:
-        tags: [Clientes]
-        summary: Deposita um valor na conta do cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DepositoRequest'
-        responses:
-          '200':
-            description: Depósito realizado com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ClienteResponse'
-          '400':
-            description: Valor de depósito inválido.
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-
-    /clientes/{id}/carteira:
-      get:
-        tags: [Clientes]
-        summary: Busca a carteira de ativos de um cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        responses:
-          '200':
-            description: Carteira retornada com sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/CarteiraResponse'
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente não encontrado.
-
-    # --- [CORRIGIDO] Rota para Comprar Ativo ---
-    /clientes/{id}/carteira/comprar:
-      post:
-        tags: [Clientes]
-        summary: Compra um ativo para a carteira do cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompraRequest'
-        responses:
-          '200':
-            description: Compra realizada com sucesso. Retorna a carteira atualizada.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/CarteiraResponse'
-          '400':
-            description: Dados da compra inválidos.
-          '401':
-            description: Não autorizado.
-          '402':
-            description: Saldo insuficiente.
-          '404':
-            description: Cliente ou produto não encontrado.
-            
-    # --- [CORRIGIDO] Rota para Vender Ativo ---
-    /clientes/{id}/carteira/vender:
-      post:
-        tags: [Clientes]
-        summary: Vende um ativo da carteira do cliente
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ClienteId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VendaRequest'
-        responses:
-          '200':
-            description: Venda realizada com sucesso. Retorna a carteira atualizada.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/CarteiraResponse'
-          '400':
-            description: Quantidade de venda inválida ou insuficiente.
-          '401':
-            description: Não autorizado.
-          '404':
-            description: Cliente ou ativo na carteira não encontrado.
-
-    # --- Rotas de Produtos de Investimento (CRUD) ---
-    /investimentos:
-      get:
-        tags: [Produtos de Investimento]
-        summary: Lista todos os produtos de investimento
-        responses:
-          '200':
-            description: Sucesso.
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/ProdutoInvestimento'
-      post:
-        tags: [Produtos de Investimento]
-        summary: Cria um novo produto de investimento (Ação de Admin)
-        security:
-          - bearerAuth: []
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProdutoInvestimentoRequest'
-        responses:
-          '201':
-            description: Produto criado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ProdutoInvestimento'
-
-    /investimentos/{id}:
-      get:
-        tags: [Produtos de Investimento]
-        summary: Busca um produto pelo ID
-        parameters:
-          - $ref: '#/components/parameters/ProdutoId'
-        responses:
-          '200':
-            description: Sucesso.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ProdutoInvestimento'
-          '404':
-            description: Produto não encontrado.
-      put:
-        tags: [Produtos de Investimento]
-        summary: Atualiza um produto (Ação de Admin)
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ProdutoId'
-        requestBody:
-          required: true
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProdutoInvestimentoRequest'
-        responses:
-          '200':
-            description: Produto atualizado.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/ProdutoInvestimento'
-          '404':
-            description: Produto não encontrado.
-      delete:
-        tags: [Produtos de Investimento]
-        summary: Deleta um produto (Ação de Admin)
-        security:
-          - bearerAuth: []
-        parameters:
-          - $ref: '#/components/parameters/ProdutoId'
-        responses:
-          '204':
-            description: Produto deletado.
-          '404':
-            description: Produto não encontrado.
-
-  components:
-    securitySchemes:
-      bearerAuth:
-        type: http
-        scheme: bearer
-        bearerFormat: JWT
-        description: "Insira o token JWT no formato: Bearer {token}"
-
-    parameters:
-      ClienteId:
-        name: id
-        in: path
+paths:
+  # --- Rotas de Autenticação ---
+  /auth/register:
+    post:
+      tags: [Autenticação]
+      summary: Registra um novo cliente
+      requestBody:
         required: true
-        description: ID do cliente
-        schema:
-          type: integer
-      ProdutoId:
-        name: id
-        in: path
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Cliente registrado com sucesso.
+        '400':
+          description: Dados inválidos (ex: senha fraca).
+        '409':
+          description: E-mail já cadastrado.
+
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autentica um cliente e retorna um token JWT
+      requestBody:
         required: true
-        description: ID do produto de investimento
-        schema:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login bem-sucedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciais inválidas.
+        '403':
+           description: Conta não verificada. # Adicionado para clareza
+
+  /auth/verify-email: # Rota adicionada ao swagger
+    post:
+      tags: [Autenticação]
+      summary: Verifica o e-mail do usuário usando um token
+      description: Ativa a conta do usuário após a verificação do token enviado por e-mail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              required: [token]
+      responses:
+        '200':
+          description: E-mail verificado com sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "E-mail verificado com sucesso!"
+        '400':
+          description: Token não fornecido.
+        '401':
+          description: Token inválido ou expirado.
+
+  /auth/refresh-token:
+    post:
+      tags: [Autenticação]
+      summary: Renova o token JWT
+      description: Gera um novo token JWT válido usando o refresh token atual. Útil para manter a sessão do usuário ativa sem necessidade de novo login.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token renovado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Token inválido ou expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Refresh token revogado ou expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags: [Autenticação]
+      summary: Solicita redefinição de senha
+      description: Envia um e-mail com token temporário para redefinição de senha. O token expira em 1 hora.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Solicitação processada. Uma mensagem genérica é retornada por segurança.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Se o e-mail fornecido estiver em nosso sistema, um link de redefinição de senha será enviado."
+        '400':
+           description: E-mail não fornecido.
+        '429':
+          description: Muitas tentativas. Aguarde alguns minutos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags: [Autenticação]
+      summary: Redefine a senha do usuário
+      description: Altera a senha do usuário usando o token temporário recebido por e-mail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Senha redefinida com sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Senha alterada com sucesso."
+        '400':
+          description: Token/senha não fornecidos ou senha inválida (fraca).
+        '401':
+          description: Token inválido ou expirado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Muitas tentativas. Aguarde alguns minutos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # --- Rotas de Clientes (CRUD) ---
+  # '/clientes/me' não existe mais explicitamente, use '/clientes/{id}' com o ID do token
+  # Se precisar manter, adicione aqui. Assumindo que foi removido/substituído.
+
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Lista todos os clientes cadastrados (Apenas Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de clientes retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClienteResponse'
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é admin).
+
+  /clientes/{id}:
+    get:
+      tags: [Clientes]
+      summary: Busca um cliente pelo seu ID (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Cliente encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+    put:
+      tags: [Clientes]
+      summary: Atualiza os dados de um cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteUpdateRequest'
+      responses:
+        '200':
+          description: Cliente atualizado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '400':
+           description: Dados inválidos (ex: e-mail duplicado).
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+    delete:
+      tags: [Clientes]
+      summary: Deleta um cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '204':
+          description: Cliente deletado com sucesso.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+
+  # --- Rotas de Perfil e Recomendação ---
+  /clientes/{id}/perfil:
+    post:
+      tags: [Clientes]
+      summary: Define o perfil de investidor de um cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerfilRequest' # Schema atualizado abaixo
+      responses:
+        '200':
+          description: Perfil definido com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilResponse'
+        '400':
+           description: Respostas inválidas ou faltando.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+
+  /clientes/{id}/recomendacoes:
+    get:
+      tags: [Clientes]
+      summary: Obtém a carteira de investimentos recomendada (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      description: Gera uma carteira de investimentos recomendada dinamicamente com base no perfil do investidor do cliente.
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Recomendação gerada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecomendacaoResponse'
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente ou perfil não encontrado / Produtos insuficientes para recomendação.
+
+  # Removido /recomendacoes/user/{userId} pois parece redundante com /clientes/{id}/recomendacoes
+
+  /clientes/{id}/recomendacoes/investir:
+    post:
+      tags: [Clientes]
+      summary: Investe o saldo disponível na carteira recomendada (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestirRecomendacaoRequest'
+      responses:
+        '200':
+          description: Investimento realizado com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Saldo insuficiente ou erro ao processar o investimento / carteira inválida.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+           description: Cliente não encontrado.
+
+
+  # --- Rotas de Saldo e Carteira ---
+  /clientes/{id}/depositar:
+    post:
+      tags: [Clientes]
+      summary: Deposita um valor na conta do cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositoRequest'
+      responses:
+        '200':
+          description: Depósito realizado com sucesso. Retorna dados do cliente atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '400':
+          description: Valor de depósito inválido (não positivo).
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+
+  /clientes/{id}/carteira:
+    get:
+      tags: [Clientes]
+      summary: Busca a carteira de ativos de um cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      responses:
+        '200':
+          description: Carteira retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente não encontrado.
+
+  /clientes/{id}/carteira/comprar:
+    post:
+      tags: [Clientes]
+      summary: Compra um ativo para a carteira do cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraRequest' # Schema atualizado para refletir 'valor' ou 'quantidade'
+      responses:
+        '200':
+          description: Compra realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Dados da compra inválidos (produtoId, quantidade/valor).
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '402':
+          description: Saldo insuficiente.
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente ou produto não encontrado.
+
+  /clientes/{id}/carteira/vender:
+    post:
+      tags: [Clientes]
+      summary: Vende um ativo da carteira do cliente (Dono da conta ou Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ClienteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendaRequest'
+      responses:
+        '200':
+          description: Venda realizada com sucesso. Retorna a carteira atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarteiraResponse'
+        '400':
+          description: Quantidade de venda inválida ou insuficiente / ativo não encontrado na carteira.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é dono nem admin).
+        '404':
+          description: Cliente ou produto não encontrado.
+
+  # --- Rotas de Produtos de Investimento (CRUD) ---
+  /investimentos:
+    get:
+      tags: [Produtos de Investimento]
+      summary: Lista todos os produtos de investimento (Público)
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProdutoInvestimento'
+    post:
+      tags: [Produtos de Investimento]
+      summary: Cria um novo produto de investimento (Apenas Admin)
+      security:
+        - bearerAuth: [] # Requer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoInvestimentoRequest'
+      responses:
+        '201':
+          description: Produto criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoInvestimento'
+        '400':
+           description: Dados inválidos (campos obrigatórios, preço negativo).
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é admin).
+
+  /investimentos/{id}:
+    get:
+      tags: [Produtos de Investimento]
+      summary: Busca um produto pelo ID (Público)
+      parameters:
+        - $ref: '#/components/parameters/ProdutoId'
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoInvestimento'
+        '404':
+          description: Produto não encontrado.
+    put:
+      tags: [Produtos de Investimento]
+      summary: Atualiza um produto (Apenas Admin)
+      security:
+        - bearerAuth: [] # Requer token
+      parameters:
+        - $ref: '#/components/parameters/ProdutoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoInvestimentoRequest'
+      responses:
+        '200':
+          description: Produto atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoInvestimento'
+        '400':
+           description: Dados inválidos.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é admin).
+        '404':
+          description: Produto não encontrado.
+    delete:
+      tags: [Produtos de Investimento]
+      summary: Deleta um produto (Apenas Admin)
+      security:
+        - bearerAuth: [] # Requer token
+      parameters:
+        - $ref: '#/components/parameters/ProdutoId'
+      responses:
+        '204':
+          description: Produto deletado com sucesso.
+        '401':
+          description: Não autorizado (token inválido/expirado).
+        '403':
+           description: Acesso negado (não é admin).
+        '404':
+          description: Produto não encontrado.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Insira o token JWT no formato: Bearer {token}"
+
+  parameters:
+    ClienteId:
+      name: id
+      in: path
+      required: true
+      description: ID do cliente
+      schema:
+        type: integer
+        example: 1
+    ProdutoId:
+      name: id
+      in: path
+      required: true
+      description: ID do produto de investimento
+      schema:
+        type: integer
+        example: 3
+
+  schemas:
+    RegisterRequest:
+      type: object
+      properties:
+        nome: { type: string, example: "Maria da Silva" }
+        email: { type: string, format: email, example: "maria.silva@email.com" }
+        senha:
+          type: string
+          format: password
+          example: "SenhaF0rte!"
+          description: "Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo (@$!%*?&)."
+          # pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$' # Pattern pode ser usado para validação automática em algumas ferramentas
+      required: [nome, email, senha]
+
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email, example: "maria.silva@email.com" }
+        senha: { type: string, format: password, example: "SenhaF0rte!" }
+      required: [email, senha]
+
+    LoginResponse:
+      type: object
+      properties:
+        cliente:
+          type: object
+          properties:
+            id: { type: integer, example: 1 }
+            nome: { type: string, example: "Maria da Silva" }
+            email: { type: string, example: "maria.silva@email.com" }
+        token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        role: { type: string, enum: [cliente, admin], example: "cliente" } # Adicionado role
+
+    ClienteUpdateRequest:
+      type: object
+      description: "Dados para atualizar um cliente. Não inclui a senha."
+      properties:
+        nome: { type: string, example: "Maria da Silva Santos" }
+        email: { type: string, format: email, example: "maria.santos@email.com" }
+      required: [nome, email]
+
+    ClienteResponse:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        nome: { type: string, example: "Maria da Silva" }
+        email: { type: string, format: email, example: "maria.silva@email.com" }
+        saldo: { type: number, format: float, example: 5000.75 }
+        perfilId: { type: integer, nullable: true, example: 2 }
+        emailVerificado: { type: boolean, example: true } # Adicionado emailVerificado
+
+    # --- Schema PerfilRequest ATUALIZADO ---
+    PerfilRequest:
+      type: object
+      properties:
+        respostas:
+          type: object
+          description: Respostas do questionário de perfil de investidor atualizado.
+          properties:
+            idade:
+              type: string
+              enum: [A, B, C, D, E, F]
+              example: "C"
+              description: "Faixa etária do cliente (A: <=25, B: 26-35, C: 36-45, D: 46-55, E: 56-65, F: >65)"
+            situacaoFinanceira:
+              type: string
+              enum: [A, B, C, D]
+              example: "B"
+              description: "Situação financeira (A: Construindo, B: Crescendo, C: Consolidado, D: Depende Renda)"
+            objetivoPrincipal:
+              type: string
+              enum: [A, B, C, D, E]
+              example: "D"
+              description: "Objetivo do investimento (A: Preservar CP, B: Bem MP, C: Aumentar LP, D: Aposentadoria MLP, E: Maximizar Risco)"
+            liquidez:
+              type: string
+              enum: [A, B, C]
+              example: "C"
+              description: "Necessidade de resgate em 12 meses (A: Provável, B: Possível, C: Improvável)"
+            reacaoPerda:
+              type: string
+              enum: [A, B, C, D, E]
+              example: "D"
+              description: "Reação a queda de 15% (A: Resgata tudo, B: Resgata parte, C: Mantém preocupado, D: Mantém tranquilo, E: Investe mais)"
+            conhecimentoMercado:
+              type: string
+              enum: [A, B, C, D]
+              example: "C"
+              description: "Conhecimento sobre investimentos (A: Nenhum/Baixo, B: Básico, C: Médio, D: Avançado)"
+          required:
+            - idade
+            - situacaoFinanceira
+            - objetivoPrincipal
+            - liquidez
+            - reacaoPerda
+            - conhecimentoMercado
+      required: [respostas] # O objeto respostas é obrigatório
+    # --- Fim do Schema PerfilRequest ATUALIZADO ---
+
+    PerfilResponse:
+      type: object
+      properties:
+        id: { type: integer, example: 2 }
+        nome: { type: string, example: "Moderado" }
+        descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+
+    ProdutoInvestimento:
+      type: object
+      properties:
+        id: { type: integer, example: 3 }
+        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+        tipo: { type: string, example: "FII" }
+        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+        preco: { type: number, format: float, example: 162.30 }
+      required: [id, nome, tipo, risco, preco]
+
+    ProdutoInvestimentoRequest:
+      type: object
+      properties:
+        nome: { type: string, example: "Tesouro IPCA+ 2045" }
+        tipo: { type: string, example: "Renda Fixa" }
+        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
+        preco: { type: number, format: float, example: 105.50, minimum: 0 } # Adicionado minimum
+      required: [nome, tipo, risco, preco]
+
+    ItemRecomendado:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 1 }
+        nome: { type: string, example: "Tesouro Selic" }
+        tipo: { type: string, example: "Renda Fixa" }
+        risco: { type: string, example: "Baixo" }
+        percentualAlocacao: { type: integer, example: 40, minimum: 1, maximum: 100 } # Adicionado range
+      required: [produtoId, nome, tipo, risco, percentualAlocacao]
+
+    RecomendacaoResponse:
+      type: object
+      properties:
+        perfilInvestidor: { type: string, example: "Moderado" }
+        descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+        carteiraRecomendada:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemRecomendado'
+      required: [perfilInvestidor, descricaoPerfil, carteiraRecomendada]
+
+    InvestirRecomendacaoRequest:
+      type: object
+      properties:
+        carteiraRecomendada:
+          type: array
+          items:
+            # Referencia ItemRecomendado mas pode precisar apenas do produtoId e percentual
+            # Mantendo assim por simplicidade, mas idealmente seria um schema específico
+             $ref: '#/components/schemas/ItemRecomendado'
+          minItems: 1
+      required: [carteiraRecomendada]
+
+    DepositoRequest:
+      type: object
+      properties:
+        valor: { type: number, format: float, example: 1500.50, exclusiveMinimum: 0 } # Garante > 0
+      required: [valor]
+
+    # Ajustado para refletir a lógica atual do backend (recebe quantidade)
+    CompraRequest:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        quantidade: { type: number, format: float, example: 10.5, exclusiveMinimum: 0 } # Garante > 0
+      required: [produtoId, quantidade]
+
+    VendaRequest:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        quantidade: { type: number, format: float, example: 5, exclusiveMinimum: 0 } # Garante > 0
+      required: [produtoId, quantidade]
+
+    CarteiraItemResponse:
+      type: object
+      properties:
+        produtoId: { type: integer, example: 3 }
+        nome: { type: string, example: "Fundo Imobiliário HGLG11" }
+        tipo: { type: string, example: "FII" }
+        risco: { type: string, example: "Médio" }
+        precoUnitario: { type: number, format: float, example: 162.30 }
+        quantidade: { type: number, format: float, example: 25.5 } # Precisão pode ser maior
+        valorTotal: { type: number, format: float, example: 4138.65 }
+      required: [produtoId, nome, tipo, risco, precoUnitario, quantidade, valorTotal]
+
+    CarteiraResponse:
+      type: object
+      properties:
+        ativos:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarteiraItemResponse'
+        valorTotalInvestido: { type: number, format: float, example: 15280.40 }
+      required: [ativos, valorTotalInvestido]
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required: [refreshToken]
+
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "usuario@email.com"
+      required: [email]
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "reset-token-123"
+        novaSenha:
+          type: string
+          format: password
+          example: "NovaSenhaF0rte!"
+          description: "Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo (@$!%*?&)."
+          # pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+      required: [token, novaSenha]
+
+    ErrorResponse:
+      type: object
+      properties:
+        # Removido 'code' e 'details' para simplificar, alinhado com errorHandler
+        status:
+           type: string
+           example: "error"
+        statusCode:
           type: integer
-
-    schemas:
-      RegisterRequest:
-        type: object
-        properties:
-          nome: { type: string, example: "Maria da Silva" }
-          email: { type: string, format: email, example: "maria.silva@email.com" }
-          senha: { type: string, format: password, example: "senhaForte123" }
-        required: [nome, email, senha]
-      LoginRequest:
-        type: object
-        properties:
-          email: { type: string, format: email, example: "maria.silva@email.com" }
-          senha: { type: string, format: password, example: "senhaForte123" }
-        required: [email, senha]
-      LoginResponse:
-        type: object
-        properties:
-          cliente:
-            type: object
-            properties:
-              id: { type: integer, example: 1 }
-              nome: { type: string, example: "Maria da Silva" }
-              email: { type: string, example: "maria.silva@email.com" }
-          token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
-      ClienteUpdateRequest:
-        type: object
-        description: "Dados para atualizar um cliente. Não inclui a senha."
-        properties:
-          nome: { type: string, example: "Maria da Silva Santos" }
-          email: { type: string, example: "maria.santos@email.com" }
-        required: [nome, email]
-      ClienteResponse:
-        type: object
-        properties:
-          id: { type: integer, example: 1 }
-          nome: { type: string, example: "Maria da Silva" }
-          email: { type: string, example: "maria.silva@email.com" }
-          saldo: { type: number, format: float, example: 5000.75 }
-          perfilId: { type: integer, nullable: true, example: 2 }
-      PerfilRequest:
-        type: object
-        properties:
-          respostas:
-            type: object
-            properties:
-              toleranciaRisco: { type: string, enum: [A, B, C], example: "B" }
-              objetivo: { type: string, enum: [A, B, C], example: "C" }
-              conhecimento: { type: string, enum: [A, B, C], example: "A" }
-      PerfilResponse:
-        type: object
-        properties:
-          id: { type: integer, example: 2 }
-          nome: { type: string, example: "Moderado" }
-          descricao: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
-      ProdutoInvestimento:
-        type: object
-        properties:
-          id: { type: integer, example: 3 }
-          nome: { type: string, example: "Fundo Imobiliário HGLG11" }
-          tipo: { type: string, example: "FII" }
-          risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
-          preco: { type: number, format: float, example: 162.30 }
-      ProdutoInvestimentoRequest:
-        type: object
-        properties:
-          nome: { type: string, example: "Tesouro IPCA+ 2045" }
-          tipo: { type: string, example: "Renda Fixa" }
-          risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
-          preco: { type: number, format: float, example: 105.50 }
-        required: [nome, tipo, risco, preco]
-      ItemRecomendado:
-        type: object
-        properties:
-          produtoId: { type: integer, example: 1 }
-          nome: { type: string, example: "Tesouro Selic" }
-          tipo: { type: string, example: "Renda Fixa" }
-          risco: { type: string, example: "Baixo" }
-          percentualAlocacao: { type: integer, example: 40 }
-      RecomendacaoResponse:
-        type: object
-        properties:
-          perfilInvestidor: { type: string, example: "Moderado" }
-          descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
-          carteiraRecomendada:
-            type: array
-            items:
-              $ref: '#/components/schemas/ItemRecomendado'
-      InvestirRecomendacaoRequest:
-        type: object
-        properties:
-          carteiraRecomendada:
-            type: array
-            items:
-              $ref: '#/components/schemas/ItemRecomendado'
-      DepositoRequest:
-        type: object
-        properties:
-          valor: { type: number, format: float, example: 1500.50 }
-        required: [valor]
-      CompraRequest:
-        type: object
-        properties:
-          produtoId: { type: integer, example: 3 }
-          quantidade: { type: number, format: float, example: 10.5 }
-        required: [produtoId, quantidade]
-      VendaRequest:
-        type: object
-        properties:
-          produtoId: { type: integer, example: 3 }
-          quantidade: { type: number, format: float, example: 5 }
-        required: [produtoId, quantidade]
-      CarteiraItemResponse:
-        type: object
-        properties:
-          produtoId: { type: integer, example: 3 }
-          nome: { type: string, example: "Fundo Imobiliário HGLG11" }
-          tipo: { type: string, example: "FII" }
-          risco: { type: string, example: "Médio" }
-          precoUnitario: { type: number, format: float, example: 162.30 }
-          quantidade: { type: number, format: float, example: 25.5 }
-          valorTotal: { type: number, format: float, example: 4138.65 }
-      CarteiraResponse:
-        type: object
-        properties:
-          ativos:
-            type: array
-            items:
-              $ref: '#/components/schemas/CarteiraItemResponse'
-          valorTotalInvestido: { type: number, format: float, example: 15280.40 }
-      
-      RefreshTokenRequest:
-        type: object
-        properties:
-          refreshToken:
-            type: string
-            example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        required: [refreshToken]
-
-      ForgotPasswordRequest:
-        type: object
-        properties:
-          email:
-            type: string
-            format: email
-            example: "usuario@email.com"
-        required: [email]
-
-      ResetPasswordRequest:
-        type: object
-        properties:
-          token:
-            type: string
-            example: "reset-token-123"
-          novaSenha:
-            type: string
-            format: password
-            minLength: 8
-            example: "novaSenha123"
-        required: [token, novaSenha]
-
-      ErrorResponse:
-        type: object
-        properties:
-          code:
-            type: string
-            example: "AUTH_ERROR"
-          message:
-            type: string
-            example: "Token inválido ou expirado."
-          details:
-            type: object
-            nullable: true
-            example: null
+          example: 401
+        message:
+          type: string
+          example: "Token inválido ou expirado."
+      required: [status, statusCode, message]

@@ -55,33 +55,39 @@
       </section>
 
       <!-- REGISTER -->
-      <section id="register-view" class="panel panel--hidden">
-        <div class="card card--auth">
-          <div class="card__header">
-            <h1 class="title">Crie sua conta</h1>
-            <p class="subtitle">Leva menos de 1 minuto</p>
+<section id="register-view" class="panel panel--hidden">
+          <div class="card card--auth">
+              <div class="card__header">
+                  <h1 class="title">Crie sua conta</h1>
+                  <p class="subtitle">Leva menos de 1 minuto</p>
+              </div>
+              <form id="register-form" class="form" novalidate>
+                  <div class="field">
+                      <label for="register-nome" class="label">Nome Completo</label>
+                      <input type="text" id="register-nome" class="input" required placeholder="Seu nome" />
+                  </div>
+                  <div class="field">
+                      <label for="register-email" class="label">Email</label>
+                      <input type="email" id="register-email" class="input" required placeholder="voce@email.com" />
+                  </div>
+                  <div class="field">
+                      <label for="register-senha" class="label">Senha</label>
+                      <input type="password" id="register-senha" class="input" required placeholder="Crie uma senha" aria-describedby="register-senha-reqs-list"/>
+                      <ul id="register-senha-reqs-list" class="password-reqs-list" style="font-size: 0.85rem; margin-top: 6px; padding-left: 0px; list-style: none; color: var(--muted); display: none;"> 
+                          <li id="req-register-length"><span class="req-status"></span> Mínimo 8 caracteres</li>
+                          <li id="req-register-lower"><span class="req-status"></span> Pelo menos uma letra minúscula</li>
+                          <li id="req-register-upper"><span class="req-status"></span> Pelo menos uma letra maiúscula</li>
+                          <li id="req-register-number"><span class="req-status"></span> Pelo menos um número</li>
+                          <li id="req-register-symbol"><span class="req-status"></span> Pelo menos um símbolo</li>
+                      </ul>
+                      </div>
+                  <button type="submit" class="btn btn--primary btn--block">Cadastrar</button>
+                  <div class="auth-links">
+                      <span>Já tem conta? <a href="#" id="show-login-link" class="link">Faça login</a></span>
+                  </div>
+              </form>
           </div>
-          <form id="register-form" class="form" novalidate>
-            <div class="field">
-              <label for="register-nome" class="label">Nome Completo</label>
-              <input type="text" id="register-nome" class="input" required placeholder="Seu nome" />
-            </div>
-            <div class="field">
-              <label for="register-email" class="label">Email</label>
-              <input type="email" id="register-email" class="input" required placeholder="voce@email.com" />
-            </div>
-            <div class="field">
-              <label for="register-senha" class="label">Senha</label>
-              <input type="password" id="register-senha" class="input" required placeholder="Crie uma senha" />
-            </div>
-            <button type="submit" class="btn btn--primary btn--block">Cadastrar</button>
-            <div class="auth-links">
-              <span>Já tem conta? <a href="#" id="show-login-link" class="link">Faça login</a></span>
-            </div>
-          </form>
-        </div>
       </section>
-
       <!-- FORGOT PASSWORD -->
       <section id="forgot-password-view" class="panel panel--hidden">
         <div class="card card--auth">
@@ -104,80 +110,170 @@
 
       <!-- RESET PASSWORD -->
       <section id="reset-password-view" class="panel panel--hidden">
-        <div class="card card--auth">
-          <div class="card__header">
-            <h1 class="title">Crie uma nova senha</h1>
+          <div class="card card--auth">
+              <div class="card__header">
+                  <h1 class="title">Crie uma nova senha</h1>
+              </div>
+              <form id="reset-password-form" class="form" novalidate>
+                  <div class="field">
+                      <label for="reset-senha" class="label">Nova senha</label>
+                      <input type="password" id="reset-senha" class="input" required placeholder="Sua nova senha" aria-describedby="reset-senha-reqs-list"/>
+                      <ul id="reset-senha-reqs-list" class="password-reqs-list" style="font-size: 0.85rem; margin-top: 6px; padding-left: 0px; list-style: none; color: var(--muted); display: none;">
+                          <li id="req-reset-length"><span class="req-status"></span> Mínimo 8 caracteres</li>
+                          <li id="req-reset-lower"><span class="req-status"></span> Pelo menos uma letra minúscula</li>
+                          <li id="req-reset-upper"><span class="req-status"></span> Pelo menos uma letra maiúscula</li>
+                          <li id="req-reset-number"><span class="req-status"></span> Pelo menos um número</li>
+                          <li id="req-reset-symbol"><span class="req-status"></span> Pelo menos um símbolo (@$!%*?&)</li>
+                      </ul>
+                      </div>
+                  <button type="submit" class="btn btn--primary btn--block">Salvar nova senha</button>
+              </form>
           </div>
-          <form id="reset-password-form" class="form" novalidate>
-            <div class="field">
-              <label for="reset-senha" class="label">Nova senha</label>
-              <input type="password" id="reset-senha" class="input" required placeholder="Sua nova senha" />
-            </div>
-            <button type="submit" class="btn btn--primary btn--block">Salvar nova senha</button>
-          </form>
-        </div>
       </section>
-
       <!-- QUESTIONÁRIO -->
-      <section id="questionario-view" class="panel panel--hidden">
+<section id="questionario-view" class="panel panel--hidden">
         <header class="section-head">
           <h1 class="title">Perfil de Investidor</h1>
-          <p class="subtitle">Responda para montarmos sua carteira ideal</p>
+          <p class="subtitle">Responda as perguntas abaixo para definirmos a melhor estratégia de investimento para você.</p>
         </header>
         <form id="questionario-form" class="card card--soft form form--quiz" novalidate>
           <fieldset class="quiz">
-            <legend class="sr-only">Perguntas de perfil</legend>
+            <legend class="sr-only">Perguntas de perfil do investidor</legend>
 
             <div class="quiz__block">
-              <h3 class="quiz__question">1. Qual sua tolerância a perdas financeiras?</h3>
+              <h3 class="quiz__question">1. Qual sua faixa etária?</h3>
               <label class="choice">
-                <input type="radio" name="toleranciaRisco" value="A" required />
-                <span class="choice__ui">Baixa. Prefiro segurança a alta rentabilidade.</span>
+                <input type="radio" name="idade" value="A" required />
+                <span class="choice__ui">Até 25 anos</span>
               </label>
               <label class="choice">
-                <input type="radio" name="toleranciaRisco" value="B" />
-                <span class="choice__ui">Média. Aceito alguma volatilidade por melhores retornos.</span>
+                <input type="radio" name="idade" value="B" />
+                <span class="choice__ui">26 a 35 anos</span>
               </label>
               <label class="choice">
-                <input type="radio" name="toleranciaRisco" value="C" />
-                <span class="choice__ui">Alta. Estou disposto a correr riscos por retornos elevados.</span>
+                <input type="radio" name="idade" value="C" />
+                <span class="choice__ui">36 a 45 anos</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="idade" value="D" />
+                <span class="choice__ui">46 a 55 anos</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="idade" value="E" />
+                <span class="choice__ui">56 a 65 anos</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="idade" value="F" />
+                <span class="choice__ui">Acima de 65 anos</span>
               </label>
             </div>
 
             <div class="quiz__block">
-              <h3 class="quiz__question">2. Qual seu principal objetivo com este investimento?</h3>
+              <h3 class="quiz__question">2. Qual descreve melhor sua situação financeira atual?</h3>
               <label class="choice">
-                <input type="radio" name="objetivo" value="A" required />
-                <span class="choice__ui">Preservar meu patrimônio com segurança.</span>
+                <input type="radio" name="situacaoFinanceira" value="A" required />
+                <span class="choice__ui">Renda estável, patrimônio ainda em construção.</span>
               </label>
               <label class="choice">
-                <input type="radio" name="objetivo" value="B" />
-                <span class="choice__ui">Aumentar meu patrimônio gradualmente.</span>
+                <input type="radio" name="situacaoFinanceira" value="B" />
+                <span class="choice__ui">Renda crescente, com algum patrimônio já acumulado.</span>
               </label>
               <label class="choice">
-                <input type="radio" name="objetivo" value="C" />
-                <span class="choice__ui">Maximizar o crescimento do meu patrimônio.</span>
+                <input type="radio" name="situacaoFinanceira" value="C" />
+                <span class="choice__ui">Alta renda e/ou patrimônio já consolidado.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="situacaoFinanceira" value="D" />
+                <span class="choice__ui">Vivo principalmente dos rendimentos dos meus investimentos.</span>
               </label>
             </div>
 
             <div class="quiz__block">
-              <h3 class="quiz__question">3. Qual seu nível de conhecimento do mercado financeiro?</h3>
+              <h3 class="quiz__question">3. Qual o principal objetivo deste investimento?</h3>
               <label class="choice">
-                <input type="radio" name="conhecimento" value="A" required />
-                <span class="choice__ui">Iniciante. Conheço pouco sobre os produtos.</span>
+                <input type="radio" name="objetivoPrincipal" value="A" required />
+                <span class="choice__ui">Preservar meu capital com máxima segurança (Reserva de emergência / Curto prazo < 1 ano).</span>
               </label>
               <label class="choice">
-                <input type="radio" name="conhecimento" value="B" />
-                <span class="choice__ui">Intermediário. Entendo os conceitos básicos.</span>
+                <input type="radio" name="objetivoPrincipal" value="B" />
+                <span class="choice__ui">Comprar um bem (casa, carro) ou objetivo de médio prazo (1 a 5 anos).</span>
+              </label>
+               <label class="choice">
+                <input type="radio" name="objetivoPrincipal" value="C" />
+                <span class="choice__ui">Aumentar o patrimônio aceitando alguma volatilidade (Longo prazo > 5 anos).</span>
               </label>
               <label class="choice">
-                <input type="radio" name="conhecimento" value="C" />
-                <span class="choice__ui">Avançado. Acompanho o mercado e conheço produtos complexos.</span>
+                <input type="radio" name="objetivoPrincipal" value="D" />
+                <span class="choice__ui">Aposentadoria ou objetivos de muito longo prazo (> 10 anos).</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="objetivoPrincipal" value="E" />
+                <span class="choice__ui">Obter o máximo de rentabilidade possível, ciente dos altos riscos (Especulação / Oportunidade).</span>
+              </label>
+            </div>
+
+            <div class="quiz__block">
+              <h3 class="quiz__question">4. Você pode precisar resgatar uma parte significativa (>25%) deste valor nos próximos 12 meses?</h3>
+              <label class="choice">
+                <input type="radio" name="liquidez" value="A" required />
+                <span class="choice__ui">Sim, é muito provável.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="liquidez" value="B" />
+                <span class="choice__ui">Talvez, existe uma possibilidade.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="liquidez" value="C" />
+                <span class="choice__ui">Não, é improvável.</span>
+              </label>
+            </div>
+
+             <div class="quiz__block">
+              <h3 class="quiz__question">5. Se seus investimentos caíssem 15% em um mês, qual seria sua reação mais provável?</h3>
+              <label class="choice">
+                <input type="radio" name="reacaoPerda" value="A" required />
+                <span class="choice__ui">Resgataria tudo imediatamente para evitar mais perdas.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="reacaoPerda" value="B" />
+                <span class="choice__ui">Resgataria uma parte significativa e aguardaria.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="reacaoPerda" value="C" />
+                <span class="choice__ui">Manteria a posição, talvez um pouco preocupado, mas confiando na estratégia.</span>
+              </label>
+               <label class="choice">
+                <input type="radio" name="reacaoPerda" value="D" />
+                <span class="choice__ui">Não me preocuparia, entendo que volatilidade faz parte do longo prazo.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="reacaoPerda" value="E" />
+                <span class="choice__ui">Investiria mais, aproveitando a oportunidade de comprar mais barato.</span>
+              </label>
+            </div>
+
+            <div class="quiz__block">
+              <h3 class="quiz__question">6. Como você avalia seu conhecimento sobre produtos de investimento?</h3>
+              <label class="choice">
+                <input type="radio" name="conhecimentoMercado" value="A" required />
+                <span class="choice__ui">Nenhum ou muito baixo. Não conheço os diferentes tipos de investimento e seus riscos.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="conhecimentoMercado" value="B" />
+                <span class="choice__ui">Básico. Entendo conceitos gerais como Renda Fixa vs. Renda Variável.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="conhecimentoMercado" value="C" />
+                <span class="choice__ui">Médio. Conheço diferentes produtos (Ações, FIIs, Fundos) e entendo a relação risco/retorno.</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="conhecimentoMercado" value="D" />
+                <span class="choice__ui">Avançado. Acompanho o mercado, entendo produtos complexos e estratégias de alocação.</span>
               </label>
             </div>
 
             <div class="quiz__actions">
-              <button type="submit" class="btn btn--primary">Ver minha carteira ideal</button>
+              <button type="submit" class="btn btn--primary">Descobrir meu Perfil</button>
             </div>
           </fieldset>
         </form>

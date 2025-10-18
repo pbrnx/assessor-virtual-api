@@ -1,7 +1,7 @@
 // static/services/api.js
 
-import { getAuthToken, clearSession } from './state.js';
-import { showAlert, showLoader, hideLoader } from './ui.js';
+import { getAuthToken, clearSession } from './state.js'; //
+import { showAlert, showLoader, hideLoader } from './ui.js'; //
 
 const API_BASE_URL = '/api';
 
@@ -13,43 +13,48 @@ const API_BASE_URL = '/api';
  * @returns {Promise<any>} - A resposta da API em formato JSON.
  */
 export async function apiCall(endpoint, options = {}, buttonElement = null) {
-    showLoader();
+    showLoader(); //
     if (buttonElement) buttonElement.disabled = true;
 
-    const token = getAuthToken();
+    const token = getAuthToken(); //
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers,
     };
 
-    // Adiciona o token de autorização a todas as chamadas, exceto para as rotas de autenticação
     if (token && !endpoint.startsWith('/auth')) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
+    let response; // Declarar fora do try para acessar no catch
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+        response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
 
-        // Se a resposta for 401 (Não Autorizado), a sessão é inválida ou expirou.
-        if (response.status === 401) {
-            showAlert('Sua sessão expirou. Por favor, faça login novamente.', 'error');
-            clearSession(); // Limpa os dados do usuário do sessionStorage
-            window.location.hash = 'login'; // Redireciona para a tela de login
-            throw new Error('Não autorizado');
-        }
-        
-        const data = await response.json();
+        // Tenta ler o corpo da resposta como JSON, independentemente do status ok
+        // Isso é importante para pegar a mensagem de erro da API
+        const data = await response.json().catch(() => ({ message: `Erro ${response.status}: ${response.statusText}` })); // Fallback se o corpo não for JSON
 
+        // Se a resposta NÃO foi OK (status < 200 ou >= 300)
         if (!response.ok) {
-            throw new Error(data.message || 'Ocorreu um erro na requisição.');
+            // Se for 401 (Não Autorizado), desloga o usuário e lança a mensagem específica da API
+            if (response.status === 401 && !endpoint.startsWith('/auth/login')) { // Evita deslogar na tela de login por erro de senha
+                 showAlert('Sua sessão expirou ou é inválida. Por favor, faça login novamente.', 'error'); //
+                 clearSession(); //
+                 window.location.hash = 'login';
+            }
+            // Lança um erro com a mensagem vinda da API (ou o fallback)
+            throw new Error(data.message || `Erro ${response.status}`);
         }
 
+        // Se a resposta foi OK, retorna os dados
         return data;
+
     } catch (error) {
-        // Re-lança o erro para que a função que chamou a apiCall possa tratá-lo (ex: exibir um alerta)
+        // Apenas re-lança o erro (seja o lançado acima ou um erro de rede)
+        // O handler que chamou apiCall (ex: handleLogin) vai pegar esse erro
         throw error;
     } finally {
-        hideLoader();
+        hideLoader(); //
         if (buttonElement) buttonElement.disabled = false;
     }
 }

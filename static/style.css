@@ -586,6 +586,68 @@
     height: var(--chart-h); /* controla altura sem estourar */
   }
 
+  .password-reqs-list {
+  font-size: 0.85rem;
+  margin-top: 8px;
+  padding-left: 0; /* Remove padding padrão do UL */
+  list-style: none;
+  color: var(--muted);
+  transition: color 0.2s ease-in-out;
+  /* display: none; /* Controlado pelo JS */
+}
+
+.password-reqs-list li {
+  margin-bottom: 4px;
+  transition: color 0.2s ease-in-out;
+  display: flex; /* Alinha o ícone com o texto */
+  align-items: center;
+}
+
+.req-status {
+  display: inline-block;
+  width: 20px; /* Espaço para o ícone */
+  text-align: center;
+  margin-right: 5px;
+  font-weight: bold;
+  transition: color 0.2s ease-in-out; /* Transição de cor para o ícone */
+}
+
+/* Estado Padrão/Inválido */
+.password-reqs-list li:not(.valid) {
+  color: var(--muted); /* Cor padrão */
+}
+.password-reqs-list li:not(.valid) .req-status::before {
+  content: '●'; /* Bolinha pequena como marcador inicial */
+  color: var(--muted);
+  font-size: 0.6em; /* Tamanho da bolinha */
+  vertical-align: middle;
+}
+
+/* Estado Válido */
+.password-reqs-list li.valid {
+  color: var(--secondary); /* Verde */
+}
+.password-reqs-list li.valid .req-status::before {
+  content: '✓'; /* Checkmark */
+  color: var(--secondary); /* Verde */
+  font-size: 1em; /* Tamanho normal para o checkmark */
+  vertical-align: middle;
+}
+
+/* Ajustes Light Mode (Geralmente não necessário devido às variáveis CSS) */
+body.light-mode .password-reqs-list li:not(.valid) {
+    color: var(--muted);
+}
+body.light-mode .password-reqs-list li:not(.valid) .req-status::before {
+    color: var(--muted);
+}
+body.light-mode .password-reqs-list li.valid {
+  color: var(--secondary);
+}
+body.light-mode .password-reqs-list li.valid .req-status::before {
+  color: var(--secondary);
+}
+
   /* Breakpoint único 768 */
 /* Breakpoint único 768 */
 @media (max-width: 768px){
