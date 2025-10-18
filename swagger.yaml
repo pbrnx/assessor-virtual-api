@@ -23,6 +23,7 @@ paths:
     post:
       tags: [Autenticação]
       summary: Registra um novo cliente
+      description: Limitado a 10 tentativas por IP em uma janela de 15 minutos.
       requestBody:
         required: true
         content:
@@ -33,9 +34,11 @@ paths:
         '201':
           description: Cliente registrado com sucesso.
         '400':
-          description: Dados inválidos (ex: senha fraca).
+          description: Dados inválidos (ex. senha fraca).
         '409':
           description: E-mail já cadastrado.
+        '429':
+          description: Muitas tentativas. Aguarde 15 minutos.
 
   /auth/login:
     post:
@@ -95,7 +98,10 @@ paths:
     post:
       tags: [Autenticação]
       summary: Renova o token JWT
-      description: Gera um novo token JWT válido usando o refresh token atual. Útil para manter a sessão do usuário ativa sem necessidade de novo login.
+      description: |
+        Gera um novo token JWT válido usando o refresh token atual. 
+        Útil para manter a sessão do usuário ativa sem necessidade de novo login.
+        Limitado a 20 tentativas por IP em uma janela de 15 minutos.
       security:
         - bearerAuth: []
       requestBody:
@@ -123,6 +129,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Muitas tentativas. Aguarde 15 minutos.
 
   /auth/forgot-password:
     post:
@@ -404,6 +412,9 @@ paths:
     get:
       tags: [Clientes]
       summary: Busca a carteira de ativos de um cliente (Dono da conta ou Admin)
+      description: |
+        Retorna a carteira de investimentos do cliente.
+        Esta rota é protegida por autenticação e pelo middleware isOwnerOrAdmin.
       security:
         - bearerAuth: []
       parameters:

@@ -29,13 +29,19 @@ O projeto segue uma arquitetura em camadas, implementando os princípios SOLID:
 - **Interface Segregation**: Interfaces específicas para cada tipo de serviço
 - **Dependency Inversion**: Injeção de dependências nos serviços
 
-### Design Patterns Utilizados
+### Design Patterns e Arquitetura
 
-1. **Strategy Pattern**: Implementado nas estratégias de recomendação de investimentos
-2. **Repository Pattern**: Abstração do acesso aos dados
-3. **Factory Pattern**: Criação de instâncias de serviços
-4. **Singleton**: Conexão com banco de dados
-5. **Middleware Pattern**: Interceptação e processamento de requisições
+1. **Repository Pattern**: Abstração do acesso aos dados através dos repositories
+   - Exemplo: `cliente.repository.js`, `carteira.repository.js`
+2. **DTO Pattern**: Transferência e validação de dados entre camadas
+   - Exemplo: `auth.dto.js`, `carteira.dto.js`
+3. **Middleware Pattern**: Interceptação e processamento de requisições
+   - Rate limiting em rotas de autenticação
+   - Validação de JWT e roles
+4. **Singleton**: Conexão com banco de dados usando pool de conexões
+5. **Service Layer**: Encapsulamento da lógica de negócios
+   - Serviços especializados para cada domínio
+   - Separação clara de responsabilidades
 
 A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-mail, redefinam senhas, definam seu perfil de investidor através de um questionário (suitability), gerenciem um saldo em conta, explorem um marketplace de ativos e montem sua própria carteira de investimentos com funcionalidades de compra e venda.
 
@@ -89,7 +95,6 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
     - **bcryptjs**: Criptografia de senhas
     - **express-rate-limit**: Limitação de requisições
     - **helmet**: Headers de segurança
-    - **cors**: Configuração de CORS
 -   **E-mail e Comunicação**:
     - **Nodemailer**: Envio de e-mails
     - **Google OAuth2**: Autenticação para envio de e-mails
@@ -98,15 +103,14 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
     - **OpenAPI 3.0**: Especificação da API
     - **DotEnv**: Gerenciamento de variáveis de ambiente
 -   **Testes**:
-    - **Jest**: Framework de testes
-    - **Supertest**: Testes de integração
-    - **faker-js**: Geração de dados para testes
+    - Testes de integração para rotas de autenticação
+    - Testes unitários para serviços
 
 ### Frontend
 -   **HTML5 / CSS3**
     - Layout responsivo
     - Flexbox e Grid
-    - CSS Modules
+    - Tema claro/escuro
 -   **JavaScript**:
     - **Vanilla JS (ES6+)**
     - **Módulos ES6**
@@ -299,26 +303,37 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 ### Endpoints Disponíveis
 
-#### Autenticação
-- `POST /api/auth/register` - Registro de novo usuário
-- `POST /api/auth/login` - Login de usuário
-- `POST /api/auth/forgot-password` - Solicita redefinição de senha
-- `POST /api/auth/reset-password` - Redefine a senha
+#### Autenticação (Rate Limited)
+- `POST /api/auth/register` - Registro de novo usuário (10 req/15min)
+- `POST /api/auth/login` - Login de usuário (10 req/15min)
+- `POST /api/auth/verify-email` - Verifica e-mail do usuário
+- `POST /api/auth/forgot-password` - Solicita redefinição de senha (10 req/15min)
+- `POST /api/auth/reset-password` - Redefine a senha (10 req/15min)
+- `POST /api/auth/refresh-token` - Renova o token JWT (20 req/15min)
 
-#### Clientes
-- `GET /api/clientes/me` - Perfil do usuário autenticado
-- `GET /api/clientes/{id}` - Busca cliente por ID
-- `PUT /api/clientes/{id}` - Atualiza dados do cliente
-- `POST /api/clientes/{id}/perfil` - Define perfil do investidor
+#### Clientes (Requer Autenticação)
+- `GET /api/clientes` - Lista todos os clientes (Apenas Admin)
+- `GET /api/clientes/{id}` - Busca cliente por ID (Dono ou Admin)
+- `PUT /api/clientes/{id}` - Atualiza dados do cliente (Dono ou Admin)
+- `DELETE /api/clientes/{id}` - Remove cliente (Dono ou Admin)
+- `POST /api/clientes/{id}/perfil` - Define perfil do investidor (Dono ou Admin)
+- `POST /api/clientes/{id}/depositar` - Deposita valor na conta (Dono ou Admin)
 
-#### Carteira
-- `GET /api/clientes/{id}/carteira` - Lista ativos da carteira
-- `POST /api/clientes/{id}/carteira/comprar` - Compra ativo
-- `POST /api/clientes/{id}/carteira/vender` - Vende ativo
+#### Carteira (Requer Autenticação)
+- `GET /api/clientes/{id}/carteira` - Lista ativos da carteira (Dono ou Admin)
+- `POST /api/clientes/{id}/carteira/comprar` - Compra ativo (Dono ou Admin)
+- `POST /api/clientes/{id}/carteira/vender` - Vende ativo (Dono ou Admin)
 
-#### Recomendações
-- `GET /api/clientes/{id}/recomendacoes` - Obtém recomendações
-- `POST /api/clientes/{id}/recomendacoes/investir` - Investe conforme recomendação
+#### Recomendações (Requer Autenticação)
+- `GET /api/clientes/{id}/recomendacoes` - Obtém recomendações (Dono ou Admin)
+- `POST /api/clientes/{id}/recomendacoes/investir` - Investe conforme recomendação (Dono ou Admin)
+
+#### Produtos de Investimento
+- `GET /api/investimentos` - Lista todos os produtos (Público)
+- `GET /api/investimentos/{id}` - Busca produto por ID (Público)
+- `POST /api/investimentos` - Cria novo produto (Apenas Admin)
+- `PUT /api/investimentos/{id}` - Atualiza produto (Apenas Admin)
+- `DELETE /api/investimentos/{id}` - Remove produto (Apenas Admin)
 
 ### Acessando a Aplicação
 
@@ -374,6 +389,8 @@ A estrutura do projeto segue os princípios de Clean Architecture e SOLID:
 │   ├── api/                    # Rotas e configuração de endpoints
 │   │   ├── auth.routes.js      # Rotas de autenticação
 │   │   ├── carteira.routes.js  # Rotas de carteira
+│   │   ├── clientes.routes.js  # Rotas de clientes
+│   │   ├── investimentos.routes.js # Rotas de produtos de investimento
 │   │   └── __tests__/         # Testes de integração das rotas
 │   │
 │   ├── config/                # Configurações do projeto
@@ -383,55 +400,53 @@ A estrutura do projeto segue os princípios de Clean Architecture e SOLID:
 │   ├── controllers/          # Controladores da aplicação
 │   │   ├── auth.controller.js
 │   │   ├── carteira.controller.js
-│   │   └── cliente.controller.js
+│   │   ├── cliente.controller.js
+│   │   ├── perfil.controller.js
+│   │   ├── produtoInvestimento.controller.js
+│   │   └── recomendacao.controller.js
 │   │
 │   ├── dtos/                # Data Transfer Objects
-│   │   ├── auth.dto.js      # DTOs de autenticação
-│   │   ├── carteira.dto.js  # DTOs de carteira
-│   │   └── cliente.dto.js   # DTOs de cliente
+│   │   ├── auth.dto.js
+│   │   ├── carteira.dto.js
+│   │   ├── cliente.dto.js
+│   │   ├── perfil.dto.js
+│   │   ├── produtoInvestimento.dto.js
+│   │   └── recomendacao.dto.js
 │   │
 │   ├── middlewares/         # Middlewares da aplicação
-│   │   ├── authJwt.js       # Middleware de autenticação JWT
+│   │   ├── authJwt.js      # Middleware de autenticação JWT
 │   │   └── errorHandler.js  # Tratamento global de erros
 │   │
 │   ├── models/             # Modelos de domínio
 │   │   ├── carteira.model.js
 │   │   ├── cliente.model.js
-│   │   └── produto.model.js
+│   │   ├── perfilInvestidor.model.js
+│   │   └── produtoInvestimento.model.js
 │   │
 │   ├── repositories/       # Camada de acesso a dados
 │   │   ├── carteira.repository.js
-│   │   └── cliente.repository.js
+│   │   ├── cliente.repository.js
+│   │   └── produtoInvestimento.repository.js
 │   │
-│   ├── services/          # Lógica de negócio
-│   │   ├── auth.service.js
-│   │   ├── carteira.service.js
-│   │   ├── email.service.js
-│   │   └── __tests__/    # Testes unitários dos serviços
-│   │
-│   └── utils/            # Utilitários e helpers
-│       ├── validators.js
-│       └── helpers.js
+│   └── services/          # Lógica de negócio
+│       ├── auth.service.js
+│       ├── carteira.service.js
+│       ├── cliente.service.js
+│       ├── email.service.js
+│       ├── perfil.service.js
+│       ├── produtoInvestimento.service.js
+│       ├── recomendacao.service.js
+│       └── __tests__/    # Testes unitários
 │
 ├── static/              # Frontend da aplicação
 │   ├── services/        # Serviços do frontend
 │   │   ├── api.js      # Cliente HTTP
-│   │   ├── auth.js     # Gerenciamento de autenticação
-│   │   └── state.js    # Gerenciamento de estado
+│   │   ├── state.js    # Gerenciamento de estado
+│   │   └── ui.js       # Interação com a interface
 │   │
-│   ├── styles/         # Estilos CSS
-│   │   ├── main.css
-│   │   └── components/
-│   │
-│   ├── app.js         # Entrada da aplicação
-│   └── index.html     # Página principal
-│
-├── tests/             # Testes automatizados
-│   ├── integration/   # Testes de integração
-│   └── unit/         # Testes unitários
-│
-├── docs/             # Documentação adicional
-│   └── postman/      # Coleção do Postman
+│   ├── app.js         # Lógica principal do frontend
+│   ├── index.html     # Página principal
+│   └── style.css      # Estilos CSS
 │
 ├── .env              # Variáveis de ambiente
 ├── .env.example      # Exemplo de variáveis de ambiente
@@ -449,13 +464,17 @@ Cada diretório tem uma responsabilidade específica, seguindo o princípio da S
 
 ## 🧪 Testes
 
-Para rodar os testes automatizados (unitários e de integração):
+Os testes estão organizados em dois níveis:
 
-```bash
-npm test
-```
+### Testes de Integração
+Localizados em `src/api/__tests__/`:
+- `auth.routes.test.js` - Testa fluxos de autenticação
+- `clientes.routes.test.js` - Testa operações com clientes
 
-Os testes estão localizados em `src/services/__tests__` e `src/api/__tests__`.
+### Testes de Serviço
+Localizados em `src/services/__tests__/`:
+- `auth.service.test.js` - Testa lógica de autenticação
+- `carteira.service.test.js` - Testa operações de carteira
 
 ---
 
