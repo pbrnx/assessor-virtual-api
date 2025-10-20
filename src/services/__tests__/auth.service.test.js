@@ -48,7 +48,7 @@ describe('AuthService - Register', () => {
 
         // 1. A Lógica de Negócio foi seguida?
         expect(clienteRepository.findByEmail).toHaveBeenCalledWith(mockClienteData.email);
-        expect(bcrypt.hashSync).toHaveBeenCalledWith(mockClienteData.senha, 8);
+        expect(bcrypt.hashSync).toHaveBeenCalledWith(mockClienteData.senha, 12);
         
         // 2. Os "side effects" esperados ocorreram?
         expect(clienteRepository.create).toHaveBeenCalledWith({

@@ -78,7 +78,7 @@ INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Nubank'
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário MXRF11', 'FII', 'Médio', 10.55);
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário XPML11', 'FII', 'Médio', 115.70);
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('ETF BOVA11 (Ibovespa)', 'Ações', 'Alto', 112.30);
-INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('ETF IVVB11 (S&P 500)', 'Ações', 'Alto', 255.80);
+INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ("ETF IVVB11 (SeP 500)", 'Ações', 'Alto', 255.80);
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Google (GOGL34)', 'BDR', 'Alto', 58.90);
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Apple (AAPL34)', 'BDR', 'Alto', 85.40);
 INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Bitcoin (BTC)', 'Cripto', 'Alto', 150000.00);

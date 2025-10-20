@@ -94,7 +94,7 @@ class AuthService {
             throw new Error('A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&).');
         }
 
-        const senhaCriptografada = bcrypt.hashSync(senha, 8);
+        const senhaCriptografada = bcrypt.hashSync(senha, 12);
 
         const novoCliente = await clienteRepository.create({
             nome,
@@ -310,7 +310,7 @@ class AuthService {
             throw new Error('A nova senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&).');
         }
 
-        const senhaCriptografada = bcrypt.hashSync(novaSenha, 8);
+        const senhaCriptografada = bcrypt.hashSync(novaSenha, 12);
         
         // SEGURANÇA: Revoga refresh token ao resetar senha
         await clienteRepository.revokeRefreshToken(cliente.id);
