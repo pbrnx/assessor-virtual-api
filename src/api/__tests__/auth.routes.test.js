@@ -1,7 +1,6 @@
 // src/api/__tests__/auth.routes.test.js
 const request = require('supertest');
 const express = require('express');
-const bodyParser = require('body-parser');
 
 // 1. Cria Mocks para o Controller
 const mockAuthController = {
@@ -10,6 +9,7 @@ const mockAuthController = {
     verifyEmail: jest.fn(), 
     forgotPassword: jest.fn(),
     resetPassword: jest.fn(),
+    refreshToken: jest.fn(), // Adicionado o método refreshToken que faltava
 };
 
 // 2. MOCKA O MÓDULO DO CONTROLLER (Solução para Isolamento/Timeout)
@@ -21,7 +21,7 @@ const errorHandler = require('../../middlewares/errorHandler');
 
 // 4. Criação do App Express de Teste
 const app = express();
-app.use(bodyParser.json()); 
+app.use(express.json()); // Express 5 já tem body parser embutido
 app.use('/api/auth', authRoutes);
 app.use(errorHandler); // O middleware de erro deve ser o último
 
@@ -107,5 +107,63 @@ describe('API Auth Routes - Testes de Integração (FINAL)', () => {
 
         expect(response.statusCode).toBe(401);
         expect(response.body.message).toBe('Credenciais inválidas.');
+    });
+
+    // --- CENA: POST /api/auth/verify-email (Sucesso) ---
+    it('POST /api/auth/verify-email - deve retornar 200 ao verificar e-mail', async () => {
+        mockAuthController.verifyEmail.mockImplementation((req, res) => {
+            return res.status(200).json({ message: 'E-mail verificado com sucesso!' });
+        });
+
+        const response = await request(app)
+            .post('/api/auth/verify-email')
+            .send({ token: 'VALID_VERIFICATION_TOKEN' });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.message).toBe('E-mail verificado com sucesso!');
+    });
+
+    // --- CENA: POST /api/auth/refresh-token (Sucesso) ---
+    it('POST /api/auth/refresh-token - deve retornar 200 e novo token', async () => {
+        mockAuthController.refreshToken.mockImplementation((req, res) => {
+            return res.status(200).json({ accessToken: 'NEW_ACCESS_TOKEN' });
+        });
+
+        const response = await request(app)
+            .post('/api/auth/refresh-token')
+            .send({ refreshToken: 'VALID_REFRESH_TOKEN' });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.accessToken).toBe('NEW_ACCESS_TOKEN');
+    });
+
+    // --- CENA: POST /api/auth/forgot-password (Sucesso) ---
+    it('POST /api/auth/forgot-password - deve retornar 200 com mensagem genérica', async () => {
+        mockAuthController.forgotPassword.mockImplementation((req, res) => {
+            return res.status(200).json({ 
+                message: 'Se o e-mail fornecido estiver em nosso sistema, um link de redefinição de senha será enviado.' 
+            });
+        });
+
+        const response = await request(app)
+            .post('/api/auth/forgot-password')
+            .send({ email: 'user@test.com' });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.message).toContain('link de redefinição');
+    });
+
+    // --- CENA: POST /api/auth/reset-password (Sucesso) ---
+    it('POST /api/auth/reset-password - deve retornar 200 ao redefinir senha', async () => {
+        mockAuthController.resetPassword.mockImplementation((req, res) => {
+            return res.status(200).json({ message: 'Senha redefinida com sucesso!' });
+        });
+
+        const response = await request(app)
+            .post('/api/auth/reset-password')
+            .send({ token: 'RESET_TOKEN', novaSenha: 'NovaSenhaForte123!' });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.body.message).toBe('Senha redefinida com sucesso!');
     });
 });

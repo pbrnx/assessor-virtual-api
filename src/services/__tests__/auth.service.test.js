@@ -6,16 +6,13 @@ jest.mock('../../repositories/cliente.repository', () => ({
     // Mockamos apenas os métodos que são usados no AuthService
     findByEmail: jest.fn(),
     create: jest.fn(),
+    setEmailVerificationToken: jest.fn(),
 }));
 jest.mock('../email.service', () => ({
     // Mockamos a função de envio de e-mail, pois ela é um "side effect"
     sendAccountVerificationEmail: jest.fn(),
 }));
 jest.mock('bcryptjs'); // Mocka bcryptjs, usado para criptografar a senha
-jest.mock('jsonwebtoken', () => ({
-    // Mocka jsonwebtoken para retornar sempre o mesmo token de verificação
-    sign: jest.fn(() => 'MOCK_VERIFICATION_TOKEN')
-}));
 
 // Importa o serviço a ser testado
 const AuthService = require('../auth.service');
@@ -25,8 +22,12 @@ const bcrypt = require('bcryptjs');
 
 describe('AuthService - Register', () => {
     
-    // Dados de Teste
-    const mockClienteData = { nome: 'João', email: 'joao@teste.com', senha: 'senhaforte' };
+    // Dados de Teste - SENHA FORTE que passa na validação
+    const mockClienteData = { 
+        nome: 'João', 
+        email: 'joao@teste.com', 
+        senha: 'SenhaForte123!@' // Senha forte: maiúscula, minúscula, número e caractere especial
+    };
     const mockClienteCriado = { id: 10, ...mockClienteData, senha: 'hashed_password' };
 
     beforeEach(() => {
@@ -36,6 +37,7 @@ describe('AuthService - Register', () => {
         // Configura mocks para o cenário de sucesso padrão
         clienteRepository.findByEmail.mockResolvedValue(null); // E-mail não existe
         clienteRepository.create.mockResolvedValue(mockClienteCriado); // Criação retorna sucesso
+        clienteRepository.setEmailVerificationToken.mockResolvedValue(); // Mock do método de token
         bcrypt.hashSync.mockReturnValue('hashed_password'); // Criptografia bem-sucedida
         emailService.sendAccountVerificationEmail.mockResolvedValue(); // Simula o sucesso do envio de e-mail
     });
@@ -54,9 +56,18 @@ describe('AuthService - Register', () => {
             email: mockClienteData.email,
             senha: 'hashed_password' // Deve usar a senha criptografada
         });
+        
+        // Verifica que o e-mail foi enviado com o email correto e algum token (gerado aleatoriamente)
         expect(emailService.sendAccountVerificationEmail).toHaveBeenCalledWith(
             mockClienteData.email, 
-            'MOCK_VERIFICATION_TOKEN'
+            expect.any(String) // Token é gerado aleatoriamente pelo crypto.randomBytes
+        );
+        
+        // Verifica que o token foi salvo no banco (com hash)
+        expect(clienteRepository.setEmailVerificationToken).toHaveBeenCalledWith(
+            mockClienteCriado.id,
+            expect.any(String), // Hash do token
+            expect.any(Date) // Data de expiração
         );
 
         // 3. O resultado está correto?

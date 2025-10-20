@@ -1,58 +1,66 @@
 // src/api/__tests__/clientes.routes.test.js
 
 // 1) MOCKS - DEVEM VIR ANTES DOS IMPORTS DA ROTA
-jest.mock('../../middlewares/authJwt', () => ({
+// Mock do middleware authJwt (aplicado em clientes.routes.js)
+const mockAuthJwt = {
   verifyToken: jest.fn((req, res, next) => next()),
-}));
+  isOwnerOrAdmin: jest.fn((req, res, next) => next()),
+  isAdmin: jest.fn((req, res, next) => next()),
+};
+jest.mock('../../middlewares/authJwt', () => mockAuthJwt);
 
-// Mock do controller da carteira: liste TODAS as funções usadas em carteira.routes.js
+// Mock do controller de cliente
+const mockClienteController = {
+  findAll: jest.fn(),
+  findById: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+  depositar: jest.fn(),
+};
+jest.mock('../../controllers/cliente.controller', () => mockClienteController);
+
+// Mock do controller de perfil
+const mockPerfilController = {
+  definirPerfil: jest.fn(),
+};
+jest.mock('../../controllers/perfil.controller', () => mockPerfilController);
+
+// Mock do controller de recomendacao
+const mockRecomendacaoController = {
+  getRecomendacao: jest.fn(),
+  investir: jest.fn(),
+};
+jest.mock('../../controllers/recomendacao.controller', () => mockRecomendacaoController);
+
+// Mock do controller da carteira
 const mockCarteiraController = {
   getCarteira: jest.fn(),
   comprar: jest.fn(),
   vender: jest.fn(),
-  // Se sua rota tiver mais handlers, adicione-os aqui:
-  // saldo: jest.fn(),
-  // extrato: jest.fn(),
 };
-
 jest.mock('../../controllers/carteira.controller', () => mockCarteiraController);
-
-// Opcional: mock do jsonwebtoken (caso o verify seja usado pelo middleware)
-jest.mock('jsonwebtoken', () => ({
-  verify: jest.fn(),
-  sign: jest.fn(() => 'MOCKED_TOKEN'),
-  decode: jest.fn(),
-}));
 
 // 2) IMPORTS (somente após os mocks)
 const request = require('supertest');
 const express = require('express');
-const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
-const carteiraRoutes = require('../carteira.routes');
+const clientesRoutes = require('../clientes.routes');
 const errorHandler = require('../../middlewares/errorHandler');
-const authJwt = require('../../middlewares/authJwt');
 
 // 3) APP DE TESTE
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json()); // Express 5 já tem body parser embutido
 
 // Monte a rota ANTES do errorHandler
-const CLIENTE_ID = 123;
-app.use('/api/clientes/:id/carteira', carteiraRoutes);
+app.use('/api/clientes', clientesRoutes);
 
 // errorHandler por último
 app.use(errorHandler);
 
 // 4) HELPERS
+const CLIENTE_ID = 123;
 const validToken = 'Bearer MOCKED_VALID_TOKEN';
 const invalidToken = 'Bearer INVALID';
-
-// Se seu middleware usa jwt.verify, simule aqui o sucesso/erro
-jwt.verify.mockImplementation((token, secret, cb) => {
-  if (token === 'MOCKED_VALID_TOKEN') return cb(null, { id: CLIENTE_ID, role: 'cliente' });
-  return cb(new Error('Token inválido/expirado'));
-});
 
 describe('Clientes Carteira Routes (protegidas por JWT)', () => {
   beforeAll(() => {
@@ -67,19 +75,63 @@ describe('Clientes Carteira Routes (protegidas por JWT)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Middleware padrão permitindo acesso quando token válido
-    authJwt.verifyToken.mockImplementation((req, res, next) => {
+    // Middleware verifyToken - simula autenticação bem-sucedida
+    mockAuthJwt.verifyToken.mockImplementation((req, res, next) => {
       const auth = req.headers['authorization'];
       if (!auth) return res.status(403).json({ message: 'Nenhum token foi fornecido!' });
       const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
-      jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
-        if (err) return res.status(401).json({ message: 'Não autorizado! O token é inválido ou expirou.' });
-        req.userId = decoded.id;
+      
+      if (token === 'MOCKED_VALID_TOKEN') {
+        req.clienteId = CLIENTE_ID;
+        req.clienteRole = 'cliente';
         return next();
-      });
+      }
+      return res.status(401).json({ message: 'Não autorizado! O token é inválido ou expirou.' });
     });
 
-    // Mocks que encerram a resposta
+    // Middleware isOwnerOrAdmin - permite acesso quando é o dono ou admin
+    mockAuthJwt.isOwnerOrAdmin.mockImplementation((req, res, next) => {
+      if (req.clienteRole === 'admin' || req.clienteId == req.params.id) {
+        return next();
+      }
+      return res.status(403).json({ message: 'Acesso negado! Você não tem permissão para acessar este recurso.' });
+    });
+
+    // Middleware isAdmin - permite acesso apenas para admin
+    mockAuthJwt.isAdmin.mockImplementation((req, res, next) => {
+      if (req.clienteRole === 'admin') {
+        return next();
+      }
+      return res.status(403).json({ message: 'Acesso negado! Requer privilégios de administrador.' });
+    });
+
+    // Mocks dos controllers de cliente
+    mockClienteController.findAll.mockImplementation((req, res) => {
+      return res.status(200).json([{ id: 1, nome: 'Cliente 1' }]);
+    });
+
+    mockClienteController.findById.mockImplementation((req, res) => {
+      return res.status(200).json({ id: req.params.id, nome: 'Cliente' });
+    });
+
+    mockClienteController.depositar.mockImplementation((req, res) => {
+      return res.status(200).json({ id: req.params.id, saldo: 1000 });
+    });
+
+    // Mocks dos controllers de perfil e recomendacao
+    mockPerfilController.definirPerfil.mockImplementation((req, res) => {
+      return res.status(200).json({ perfil: 'Moderado' });
+    });
+
+    mockRecomendacaoController.getRecomendacao.mockImplementation((req, res) => {
+      return res.status(200).json({ recomendacoes: [] });
+    });
+
+    mockRecomendacaoController.investir.mockImplementation((req, res) => {
+      return res.status(200).json({ message: 'Investimento realizado' });
+    });
+
+    // Mocks dos controllers de carteira
     mockCarteiraController.getCarteira.mockImplementation((req, res) => {
       return res.status(200).json({ saldo: 1000, ativos: [] });
     });
