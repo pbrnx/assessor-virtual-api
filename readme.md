@@ -296,36 +296,21 @@ Siga os passos abaixo para rodar o projeto localmente.
 
     COMMIT;
     ```
-
-5.  **Execute a migration de segurança (IMPORTANTE):**
-    
-    Se você já tinha o banco criado anteriormente, execute esta migration adicional para os novos campos de segurança:
-    
-    ```sql
-    -- Migration 002: Adicionar campos de expiração de tokens
-    -- Necessário apenas se você já tinha o banco criado sem estes campos
-    
-    ALTER TABLE investimento_cliente 
-    ADD email_verification_token_expires DATE;
-    
-    ALTER TABLE investimento_cliente 
-    ADD refresh_token_expires DATE;
-    
-    COMMIT;
-    ```
-
-6.  **Instale as dependências:**
+5.  **Instale as dependências:**
     ```bash
     npm install
     ```
 
-7.  **Inicie o servidor:**
+6.  **Inicie o servidor:**
     ```bash
     node app.js
     ```
-   
-
----
+      ou 
+   ```bash
+   npm start
+   ```
+   (npm start executa também os testes automatizados)
+   ---
 
 ## 🚀 Uso
 
@@ -485,7 +470,7 @@ A estrutura do projeto segue os princípios de Clean Architecture e SOLID:
 └── README.md         # Documentação principal
 ```
 
-Cada diretório tem uma responsabilidade específica, seguindo o princípio da Separação de Responsabilidades:
+# Cada diretório tem uma responsabilidade específica, seguindo o princípio da Separação de Responsabilidades:
     ├── .gitignore              # Arquivos e pastas a serem ignorados pelo Git
     ├── app.js                  # Ponto de entrada da aplicação (servidor)
     ├── package.json            # Dependências e metadados do projeto
