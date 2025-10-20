@@ -4,8 +4,8 @@ const path = require('path');
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
-//const helmet = require('helmet'); // Já incluído
-const rateLimit = require('express-rate-limit'); // <--- 1. Importe o pacote
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const database = require('./src/config/database');
 const apiRoutes = require('./src/api');
@@ -17,7 +17,7 @@ const swaggerDocument = YAML.load('./swagger.yaml');
 database.startup().then(() => {
     const app = express();
     app.use(express.json());
-   // app.use(helmet()); 
+    app.use(helmet()); 
 
     // --- CONFIGURAÇÃO DO RATE LIMITER ---
     // Aplica um limite geral para todas as requisições API

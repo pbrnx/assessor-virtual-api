@@ -4,11 +4,12 @@ info:
   description: API REST para cadastro de clientes, definição de perfil, gestão de saldo e carteira de investimentos.
   version: 1.0.0
 servers:
+  - url: https://assessor-virtual-api-684499909473.southamerica-east1.run.app/api
+    description: Deploy no Google Cloud Run
   - url: https://assessor-virtual-api.onrender.com/api
     description: Deploy no render
   - url: http://localhost:3000/api
     description: Servidor de Desenvolvimento Local
-
 tags:
   - name: Autenticação
     description: Operações de registro e login de usuários.
