@@ -17,8 +17,10 @@ A documentação dos endpoints pode ser encontrada aqui: https://assessor-virtua
 
 P.S. Para menor latência, use o deploy do Google Cloud: https://assessor-virtual-api-684499909473.southamerica-east1.run.app. 
 
-Se preferir usar docker para rodar localmente, a imagem do container é essa docker.io/pbrnx/assessor-virtual-api:v1.0.1
-
+Se preferir usar docker para rodar localmente, a imagem do container é essa 
+```bash
+docker pull docker.io/pbrnx/assessor-virtual-api:latest
+```
 ## ❯ Descrição
 
 O **Assessor de Investimentos Virtual** é uma aplicação Full Stack que simula uma plataforma de investimentos completa. O projeto consiste em uma API RESTful construída com Node.js e Express, conectada a um banco de dados Oracle, e um frontend dinâmico (SPA - Single Page Application) desenvolvido com Vanilla JavaScript, HTML e CSS.
