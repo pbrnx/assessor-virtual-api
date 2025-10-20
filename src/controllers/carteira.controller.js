@@ -16,36 +16,39 @@ class CarteiraController {
         }
     }
 
-    // --- SUBSTITUA ESTA FUNÇÃO INTEIRA ---
-    async comprar(req, res, next) {
-        console.log('CORPO DA REQUISIÇÃO RECEBIDO:', req.body); // O log pode ser mantido ou removido
 
-        try {
-            const clienteId = req.params.id;
-            // [MUDANÇA] Extraímos os dados diretamente do req.body
-            const { produtoId, quantidade } = req.body;
+async comprar(req, res, next) {
+    console.log('CORPO DA REQUISIÇÃO RECEBIDO:', req.body);
 
-            // [MUDANÇA] A validação agora usa as variáveis locais
-            if (!produtoId || !quantidade) {
-                // Esta mensagem de erro não deve mais aparecer
-                return res.status(400).json({ message: 'produtoId e quantidade são obrigatórios.' });
-            }
+    try {
+        const clienteId = req.params.id;
+        // [MUDANÇA] Extrai 'valor' em vez de 'quantidade'
+        const { produtoId, valor } = req.body;
 
-            const carteiraAtualizada = await carteiraService.comprarAtivo(
-                clienteId,
-                produtoId,     // Passa a variável diretamente
-                quantidade     // Passa a variável diretamente
-            );
-            
-            const carteiraResponse = new CarteiraResponseDTO(carteiraAtualizada);
-            res.status(200).json(carteiraResponse);
-
-        } catch (error) {
-            // Define o status code com base na mensagem de erro do service
-            error.statusCode = error.message.includes('Saldo insuficiente') ? 402 : 400;
-            next(error);
+        // [MUDANÇA] Validação para 'valor'
+        if (!produtoId || valor === undefined) { // Verifica se valor existe (pode ser 0, mas não undefined)
+            return res.status(400).json({ message: 'produtoId e valor são obrigatórios.' });
         }
+         // Adiciona validação para valor positivo, embora o service também valide
+         if (typeof valor !== 'number' || valor <= 0) {
+             return res.status(400).json({ message: 'O valor da compra deve ser um número positivo.' });
+         }
+
+
+        const carteiraAtualizada = await carteiraService.comprarAtivo(
+            clienteId,
+            produtoId,
+            valor // <<< MUDANÇA AQUI: Passa 'valor' para o service
+        );
+
+        const carteiraResponse = new CarteiraResponseDTO(carteiraAtualizada);
+        res.status(200).json(carteiraResponse);
+
+    } catch (error) {
+        error.statusCode = error.message.includes('Saldo insuficiente') ? 402 : 400;
+        next(error);
     }
+}
 
     async vender(req, res, next) {
         try {

@@ -100,11 +100,9 @@ paths:
       tags: [Autenticação]
       summary: Renova o token JWT
       description: |
-        Gera um novo token JWT válido usando o refresh token atual. 
+        Gera um novo token JWT válido usando o refresh token atual.
         Útil para manter a sessão do usuário ativa sem necessidade de novo login.
         Limitado a 20 tentativas por IP em uma janela de 15 minutos.
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -447,7 +445,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CompraRequest' # Schema atualizado para refletir 'valor' ou 'quantidade'
+              $ref: '#/components/schemas/CompraRequest' # Schema atualizado para refletir 'valor'
       responses:
         '200':
           description: Compra realizada com sucesso. Retorna a carteira atualizada.
@@ -456,7 +454,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CarteiraResponse'
         '400':
-          description: Dados da compra inválidos (produtoId, quantidade/valor).
+          description: Dados da compra inválidos (produtoId, valor). # Alterado
         '401':
           description: Não autorizado (token inválido/expirado).
         '402':
@@ -644,15 +642,18 @@ components:
 
     LoginResponse:
       type: object
+      required: [cliente, accessToken, role]
       properties:
         cliente:
           type: object
+          required: [id, nome, email]
           properties:
             id: { type: integer, example: 1 }
             nome: { type: string, example: "Maria da Silva" }
             email: { type: string, example: "maria.silva@email.com" }
-        token: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
-        role: { type: string, enum: [cliente, admin], example: "cliente" } # Adicionado role
+        accessToken: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        refreshToken: { type: string, example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", nullable: true }
+        role: { type: string, enum: [cliente, admin], example: "cliente" }
 
     ClienteUpdateRequest:
       type: object
@@ -739,33 +740,77 @@ components:
 
     ProdutoInvestimentoRequest:
       type: object
-      properties:
-        nome: { type: string, example: "Tesouro IPCA+ 2045" }
-        tipo: { type: string, example: "Renda Fixa" }
-        risco: { type: string, enum: [Baixo, Médio, Alto], example: "Médio" }
-        preco: { type: number, format: float, example: 105.50, minimum: 0 } # Adicionado minimum
+      description: Dados para criar ou atualizar um produto de investimento
       required: [nome, tipo, risco, preco]
+      properties:
+        nome:
+          type: string
+          example: "Tesouro IPCA+ 2045"
+          description: "Nome completo do produto de investimento"
+        tipo:
+          type: string
+          example: "Renda Fixa"
+          description: "Categoria do produto (ex: Renda Fixa, FII, Ação)"
+        risco:
+          type: string
+          enum: [Baixo, Médio, Alto]
+          example: "Médio"
+          description: "Nível de risco do produto"
+        preco:
+          type: number
+          format: float
+          example: 105.50
+          exclusiveMinimum: 0
+          description: "Preço unitário do produto"
 
     ItemRecomendado:
       type: object
-      properties:
-        produtoId: { type: integer, example: 1 }
-        nome: { type: string, example: "Tesouro Selic" }
-        tipo: { type: string, example: "Renda Fixa" }
-        risco: { type: string, example: "Baixo" }
-        percentualAlocacao: { type: integer, example: 40, minimum: 1, maximum: 100 } # Adicionado range
+      description: Produto de investimento com seu percentual recomendado de alocação
       required: [produtoId, nome, tipo, risco, percentualAlocacao]
+      properties:
+        produtoId:
+          type: integer
+          example: 1
+          description: "ID único do produto de investimento"
+        nome:
+          type: string
+          example: "Tesouro Selic"
+          description: "Nome do produto"
+        tipo:
+          type: string
+          example: "Renda Fixa"
+          description: "Categoria do produto"
+        risco:
+          type: string
+          example: "Baixo"
+          enum: [Baixo, Médio, Alto]
+          description: "Nível de risco do produto"
+        percentualAlocacao:
+          type: integer
+          example: 40
+          minimum: 1
+          maximum: 100
+          description: "Percentual recomendado de alocação (1-100)"
 
     RecomendacaoResponse:
       type: object
+      description: Recomendação de carteira baseada no perfil do investidor
+      required: [perfilInvestidor, descricaoPerfil, carteiraRecomendada]
       properties:
-        perfilInvestidor: { type: string, example: "Moderado" }
-        descricaoPerfil: { type: string, example: "Busca um equilíbrio entre segurança e rentabilidade." }
+        perfilInvestidor:
+          type: string
+          example: "Moderado"
+          description: "Nome do perfil do investidor"
+        descricaoPerfil:
+          type: string
+          example: "Busca um equilíbrio entre segurança e rentabilidade."
+          description: "Descrição detalhada do perfil"
         carteiraRecomendada:
           type: array
+          description: "Lista de produtos recomendados com seus percentuais de alocação"
+          minItems: 1
           items:
             $ref: '#/components/schemas/ItemRecomendado'
-      required: [perfilInvestidor, descricaoPerfil, carteiraRecomendada]
 
     InvestirRecomendacaoRequest:
       type: object
@@ -785,20 +830,35 @@ components:
         valor: { type: number, format: float, example: 1500.50, exclusiveMinimum: 0 } # Garante > 0
       required: [valor]
 
-    # Ajustado para refletir a lógica atual do backend (recebe quantidade)
     CompraRequest:
       type: object
+      description: Define os dados esperados para comprar um ativo pelo VALOR monetário
+      required: [produtoId, valor]
       properties:
-        produtoId: { type: integer, example: 3 }
-        quantidade: { type: number, format: float, example: 10.5, exclusiveMinimum: 0 } # Garante > 0
-      required: [produtoId, quantidade]
+        produtoId:
+          type: integer
+          example: 3
+        valor:
+          type: number
+          format: float
+          example: 500.00
+          exclusiveMinimum: 0
+          description: "Valor em reais a ser investido no produto"
 
     VendaRequest:
       type: object
-      properties:
-        produtoId: { type: integer, example: 3 }
-        quantidade: { type: number, format: float, example: 5, exclusiveMinimum: 0 } # Garante > 0
+      description: Define os dados esperados para vender um ativo pela QUANTIDADE
       required: [produtoId, quantidade]
+      properties:
+        produtoId:
+          type: integer
+          example: 3
+        quantidade:
+          type: number
+          format: float
+          example: 5
+          exclusiveMinimum: 0
+          description: "Quantidade do ativo a ser vendida"
 
     CarteiraItemResponse:
       type: object

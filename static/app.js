@@ -269,59 +269,61 @@ async function handleQuestionario(event) {
 
 /**
  * Lida com a confirmação de compra de um ativo (chamado pelo modal).
+/**
+ * Lida com a confirmação de compra de um ativo (chamado pelo modal).
  * @param {number} produtoId - ID do produto a comprar.
  * @param {number} valor - Valor monetário a investir.
  * @param {HTMLElement} button - Botão de confirmação do modal.
  */
 async function handleCompra(produtoId, valor, button) {
+    // Converte os inputs para números
     const idNum = Number(produtoId);
     const valNum = Number(valor);
 
-    // Validações básicas
+    // Validações básicas dos inputs
     if (isNaN(idNum) || idNum <= 0) {
-        showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error'); //
-        return;
+        showAlert('Ocorreu um erro interno (ID do produto inválido).', 'error'); // Exibe alerta de erro
+        return; // Interrompe a função se o ID for inválido
     }
     if (isNaN(valNum) || valNum <= 0) {
-        showAlert('O valor para compra deve ser um número positivo.', 'error'); //
-        return;
+        showAlert('O valor para compra deve ser um número positivo.', 'error'); // Exibe alerta de erro
+        return; // Interrompe a função se o valor for inválido
     }
-    const user = getCurrentUser(); //
+
+    // Obtém o usuário atual do estado
+    const user = getCurrentUser();
+    // Verifica se o usuário está autenticado
     if (!user) {
-        showAlert('Erro: Usuário não autenticado.', 'error'); //
-        return;
+        showAlert('Erro: Usuário não autenticado.', 'error'); // Exibe alerta de erro
+        return; // Interrompe a função se não houver usuário
     }
 
-    // --- CÁLCULO DA QUANTIDADE ---
-    // O backend atual espera 'quantidade', então calculamos aqui
-    const products = getAllProducts(); //
-    const product = products.find(p => p.id === idNum);
-    if (!product || !product.preco || product.preco <= 0) {
-        showAlert('Não foi possível obter o preço atual do produto para calcular a quantidade.', 'error'); //
-        return;
-    }
-    const quantidadeCalculada = valNum / product.preco;
-    // --- FIM CÁLCULO ---
-
-    const payload = { produtoId: idNum, quantidade: quantidadeCalculada }; // Envia 'quantidade'
+    // Cria o payload para a requisição da API, enviando o 'valor'
+    const payload = { produtoId: idNum, valor: valNum }; // <<< CORREÇÃO: Envia 'valor'
 
     try {
-        // --- USA apiCallWithRefresh ---
-        await apiCallWithRefresh(`/clientes/${user.id}/carteira/comprar`, { //
+        // Chama a API para realizar a compra usando apiCallWithRefresh
+        // Passa o ID do cliente, endpoint, método POST, corpo da requisição e o botão
+        await apiCallWithRefresh(`/clientes/${user.id}/carteira/comprar`, {
             method: 'POST',
-            body: JSON.stringify(payload)
-        }, button);
-        // --- FIM DA MUDANÇA ---
-        showAlert('Compra realizada com sucesso!', 'success'); //
-        closeModal('buy'); //
-        await initializeUserFlow(); // Recarrega dados do dashboard
+            body: JSON.stringify(payload) // Converte o payload para JSON
+        }, button); // Passa o botão para desabilitar durante a chamada
+
+        // Se a chamada for bem-sucedida
+        showAlert('Compra realizada com sucesso!', 'success'); // Exibe mensagem de sucesso
+        closeModal('buy'); // Fecha o modal de compra
+        await initializeUserFlow(); // Recarrega os dados do dashboard para refletir a compra
+
     } catch (error) {
+        // Se ocorrer um erro durante a chamada da API
+        // Verifica se o erro NÃO é de sessão expirada (já tratado pelo apiCallWithRefresh)
         if (!error.message || !error.message.includes('Sessão expirada')) {
-            showAlert(error.message || 'Erro ao realizar compra.', 'error'); //
+            // Exibe a mensagem de erro da API ou uma mensagem genérica
+            showAlert(error.message || 'Erro ao realizar compra.', 'error');
         }
+        // Nota: O erro de sessão expirada já causa redirecionamento para login dentro de apiCallWithRefresh
     }
 }
-
 /**
  * Lida com a confirmação de venda de um ativo (chamado pelo modal).
  * @param {number} produtoId - ID do produto a vender.
