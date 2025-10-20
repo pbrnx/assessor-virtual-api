@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const database = require('./src/config/database');
 const apiRoutes = require('./src/api');
 const errorHandler = require('./src/middlewares/errorHandler');
+const { startCleanupJob } = require('./src/jobs/cleanupExpiredTokens'); // Job de limpeza
 
 const swaggerDocument = YAML.load('./swagger.yaml');
 
@@ -66,6 +67,9 @@ database.startup().then(() => {
         console.log(`Servidor rodando na porta ${PORT}`);
         console.log(`Frontend disponível em http://localhost:${PORT}`);
         console.log(`Documentação em http://localhost:${PORT}/api-docs`);
+        
+        // Iniciar job de limpeza de tokens expirados
+        startCleanupJob();
     });
 
 }).catch(err => {

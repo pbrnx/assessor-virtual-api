@@ -199,7 +199,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     -   Execute o script SQL abaixo no seu banco de dados Oracle para criar todas as tabelas, relacionamentos e inserir os dados iniciais.
     -   *(O script já inclui a lógica para apagar as tabelas antigas, se existirem)*.
     ```sql
-     -- Bloco para limpar as tabelas do projeto de investimento antes de criá-las.
+    -- Bloco para limpar as tabelas do projeto de investimento antes de criá-las.
     BEGIN
         EXECUTE IMMEDIATE 'DROP TABLE investimento_carteira CASCADE CONSTRAINTS';
         EXECUTE IMMEDIATE 'DROP TABLE investimento_cliente CASCADE CONSTRAINTS';
@@ -221,7 +221,7 @@ Siga os passos abaixo para rodar o projeto localmente.
         CONSTRAINT uq_investimento_perfil_nome UNIQUE (nome)
     );
 
-    -- Tabela de clientes com o novo campo EMAIL_VERIFICADO
+    -- Tabela de clientes com campos de segurança de tokens
     CREATE TABLE investimento_cliente (
         id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         nome VARCHAR2(255) NOT NULL,
@@ -230,6 +230,12 @@ Siga os passos abaixo para rodar o projeto localmente.
         email_verificado NUMBER(1) DEFAULT 0 NOT NULL,
         saldo NUMBER(19, 2) DEFAULT 0.00 NOT NULL,
         perfil_id NUMBER(19),
+        email_verification_token VARCHAR2(255),         -- Hash SHA-256 do token de verificação de email
+        email_verification_token_expires DATE,          -- Expiração do token de verificação (24h)
+        reset_password_token VARCHAR2(255),             -- Hash SHA-256 do token de redefinição de senha
+        reset_password_token_expires DATE,              -- Expiração do token de redefinição (1h)
+        refresh_token VARCHAR2(255),                    -- Hash SHA-256 do refresh token JWT
+        refresh_token_expires DATE,                     -- Expiração do refresh token (7 dias)
         CONSTRAINT uq_investimento_cliente_email UNIQUE (email),
         CONSTRAINT fk_invest_cliente_perfil FOREIGN KEY (perfil_id)
             REFERENCES investimento_perfil(id)
@@ -262,7 +268,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_perfil (nome, descricao) VALUES ('Moderado', 'Busca um equilíbrio entre segurança e rentabilidade.');
     INSERT INTO investimento_perfil (nome, descricao) VALUES ('Arrojado', 'Tolera altos riscos em busca de maior rentabilidade.');
 
-    -- Inserir Produtos de Investimento (Exemplos)
+    -- Inserir Produtos de Investimento
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro Selic', 'Renda Fixa', 'Baixo', 108.50);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB PagSeguro', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário HGLG11', 'FII', 'Médio', 162.30);
@@ -278,7 +284,6 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Apple (AAPL34)', 'BDR', 'Alto', 85.40);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Bitcoin (BTC)', 'Cripto', 'Alto', 150000.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ethereum (ETH)', 'Cripto', 'Alto', 9500.00);
-    -- Adicione mais produtos conforme necessário...
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro IPCA+', 'Renda Fixa', 'Baixo', 105.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Bradesco', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário KNRI11', 'FII', 'Médio', 150.20);
@@ -288,21 +293,33 @@ Siga os passos abaixo para rodar o projeto localmente.
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('CDB Itaú', 'Renda Fixa', 'Baixo', 100.00);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário HGBS11', 'FII', 'Médio', 130.80);
     INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Financeiro', 'Ações', 'Alto', 92.30);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Microsoft (MSFT34)', 'BDR', 'Alto', 110.50);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Amazon (AMZO34)', 'BDR', 'Alto', 95.30);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Cardano (ADA)', 'Cripto', 'Alto', 3.10);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Solana (SOL)', 'Cripto', 'Alto', 150.00);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Tesouro Prefixado 2029', 'Renda Fixa', 'Baixo', 102.50);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo Imobiliário VISC11', 'FII', 'Médio', 120.90);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Fundo de Ações Internacional', 'Ações', 'Alto', 88.70);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Ações da Petrobras PN', 'Ações', 'Alto', 35.80);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('BDR Tesla (TSLA34)', 'BDR', 'Alto', 145.60);
-    INSERT INTO investimento_produto (nome, tipo, risco, preco) VALUES ('Cripto Ripple (XRP)', 'Cripto', 'Alto', 2.20);
 
     COMMIT;
     ```
 
-5.  **Inicie o servidor:**
+5.  **Execute a migration de segurança (IMPORTANTE):**
+    
+    Se você já tinha o banco criado anteriormente, execute esta migration adicional para os novos campos de segurança:
+    
+    ```sql
+    -- Migration 002: Adicionar campos de expiração de tokens
+    -- Necessário apenas se você já tinha o banco criado sem estes campos
+    
+    ALTER TABLE investimento_cliente 
+    ADD email_verification_token_expires DATE;
+    
+    ALTER TABLE investimento_cliente 
+    ADD refresh_token_expires DATE;
+    
+    COMMIT;
+    ```
+
+6.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+7.  **Inicie o servidor:**
     ```bash
     node app.js
     ```

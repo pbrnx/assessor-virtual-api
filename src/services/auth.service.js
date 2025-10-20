@@ -1,9 +1,42 @@
 // src/services/auth.service.js
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto'); // ADICIONADO: Para hash seguro de tokens
 const clienteRepository = require('../repositories/cliente.repository');
 const authConfig = require('../config/auth.config');
 const emailService = require('./email.service');
+
+/**
+ * Cria um hash SHA-256 de um token.
+ * @param {string} token - O token em texto plano.
+ * @returns {string} O hash SHA-256 do token em formato hexadecimal.
+ */
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Gera um token criptograficamente seguro.
+ * @returns {string} Token aleatório de 64 caracteres hexadecimais.
+ */
+function generateSecureToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Compara dois tokens de forma segura contra timing attacks.
+ * @param {string} token1 - Primeiro token (hash).
+ * @param {string} token2 - Segundo token (hash).
+ * @returns {boolean} True se os tokens forem iguais.
+ */
+function compareTokens(token1, token2) {
+    if (!token1 || !token2 || token1.length !== token2.length) {
+        return false;
+    }
+    const buffer1 = Buffer.from(token1, 'hex');
+    const buffer2 = Buffer.from(token2, 'hex');
+    return crypto.timingSafeEqual(buffer1, buffer2);
+}
 
 /**
  * Valida a força da senha.
@@ -52,30 +85,33 @@ class AuthService {
     async register(clienteData) {
         const { nome, email, senha } = clienteData;
 
-        const emailExistente = await clienteRepository.findByEmail(email); //
+        const emailExistente = await clienteRepository.findByEmail(email);
         if (emailExistente) {
             throw new Error('Este e-mail já está cadastrado.');
         }
 
-        if (!isSenhaForte(senha)) { //
+        if (!isSenhaForte(senha)) {
             throw new Error('A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&).');
         }
 
-        const senhaCriptografada = bcrypt.hashSync(senha, 8); //
+        const senhaCriptografada = bcrypt.hashSync(senha, 8);
 
-        const novoCliente = await clienteRepository.create({ //
+        const novoCliente = await clienteRepository.create({
             nome,
             email,
             senha: senhaCriptografada
         });
 
-        // Gera um token de verificação (JWT simples com segredo principal)
-        const verificationToken = jwt.sign({ id: novoCliente.id }, authConfig.secret, { //
-            expiresIn: 3600 // 1h para verificar
-        });
+        // SEGURANÇA: Gera token criptograficamente seguro (não JWT!)
+        const verificationToken = generateSecureToken(); // 64 chars hex
+        const tokenHash = hashToken(verificationToken); // Hash SHA-256
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
 
-        // Envia o e-mail em segundo plano
-        emailService.sendAccountVerificationEmail(novoCliente.email, verificationToken) //
+        // Armazena apenas o HASH no banco de dados
+        await clienteRepository.setEmailVerificationToken(novoCliente.id, tokenHash, expiresAt);
+
+        // Envia o TOKEN ORIGINAL (não o hash) por e-mail
+        emailService.sendAccountVerificationEmail(novoCliente.email, verificationToken)
             .catch(err => {
                 console.error(`[BACKGROUND JOB FAILED] Falha ao enviar e-mail de verificação para ${novoCliente.email}:`, err);
             });
@@ -118,17 +154,22 @@ class AuthService {
             throw new Error('Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.');
         }
 
-        const senhaValida = bcrypt.compareSync(senha, cliente.senha); //
+        const senhaValida = bcrypt.compareSync(senha, cliente.senha);
         if (!senhaValida) {
             throw new Error('Credenciais inválidas.');
         }
 
-        const payload = { id: cliente.id, role: 'cliente' }; // Inclui role no payload
-        const accessToken = generateAccessToken(payload); //
-        const refreshToken = generateRefreshToken(payload); //
+        const payload = { id: cliente.id, role: 'cliente' };
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        // SEGURANÇA: Armazena o hash do refresh token no DB com data de expiração
+        const refreshTokenHash = hashToken(refreshToken);
+        const refreshTokenExpiry = new Date(Date.now() + parseInt(authConfig.jwtRefreshExpiration, 10) * 1000); // Converte segundos para ms
+        await clienteRepository.setRefreshToken(cliente.id, refreshTokenHash, refreshTokenExpiry);
 
         return {
-            cliente: { id: cliente.id, nome: cliente.nome, email: cliente.email }, //
+            cliente: { id: cliente.id, nome: cliente.nome, email: cliente.email },
             accessToken: accessToken,
             refreshToken: refreshToken,
             role: 'cliente'
@@ -147,13 +188,26 @@ class AuthService {
 
         try {
             // Verifica o refresh token usando o SEGREDO DE REFRESH
-            const decoded = jwt.verify(token, authConfig.jwtRefreshSecret); //
+            const decoded = jwt.verify(token, authConfig.jwtRefreshSecret);
+
+            // SEGURANÇA: Verifica se o hash do token existe no banco
+            const tokenHash = hashToken(token);
+            const cliente = await clienteRepository.findByRefreshToken(tokenHash);
+
+            if (!cliente) {
+                throw new Error('Refresh token revogado ou inválido.');
+            }
+
+            // Verifica timing-safe (já verificamos existência, mas para consistência)
+            if (!compareTokens(tokenHash, cliente.refreshToken)) {
+                throw new Error('Refresh token inválido.');
+            }
 
             // Cria o payload para o novo access token (baseado nos dados do refresh token)
             const payload = { id: decoded.id, role: decoded.role };
 
             // Gera um NOVO access token usando o SEGREDO PRINCIPAL
-            const newAccessToken = generateAccessToken(payload); //
+            const newAccessToken = generateAccessToken(payload);
 
             return { accessToken: newAccessToken };
 
@@ -166,29 +220,36 @@ class AuthService {
 
     /**
      * Verifica o e-mail de um cliente usando o token de verificação.
-     * @param {string} token - O token JWT de verificação.
+     * @param {string} token - O token seguro de verificação (64 chars hex).
      * @returns {Promise<object>} Mensagem de sucesso ou status.
      */
     async verifyEmail(token) {
-        let decoded;
-        try {
-            // Verifica usando o segredo principal
-            decoded = jwt.verify(token, authConfig.secret); //
-        } catch (err) {
+        if (!token) {
+            throw new Error('Token de verificação é obrigatório.');
+        }
+
+        // SEGURANÇA: Hash do token recebido para comparar com o DB
+        const tokenHash = hashToken(token);
+
+        // Busca cliente pelo hash do token (já verifica expiração no SQL)
+        const cliente = await clienteRepository.findByEmailVerificationToken(tokenHash);
+
+        if (!cliente) {
             throw new Error('Token de verificação inválido ou expirado.');
         }
 
-        const cliente = await clienteRepository.findById(decoded.id); //
-        if (!cliente) {
-            throw new Error('Usuário associado ao token não encontrado.'); // Mensagem mais clara
+        // SEGURANÇA: Comparação timing-safe
+        if (!compareTokens(tokenHash, cliente.emailVerificationToken)) {
+            throw new Error('Token de verificação inválido.');
         }
 
         // Se já verificado, retorna sucesso sem alterar nada (idempotente)
-        if (cliente.emailVerificado) { //
+        if (cliente.emailVerificado) {
             return { message: 'E-mail já verificado.' };
         }
 
-        await clienteRepository.updateEmailVerificado(decoded.id); //
+        // Marca como verificado e limpa o token
+        await clienteRepository.updateEmailVerificado(cliente.id);
         return { message: 'E-mail verificado com sucesso!' };
     }
 
@@ -197,20 +258,23 @@ class AuthService {
      * @param {string} email - E-mail do cliente.
      */
     async forgotPassword(email) {
-        const cliente = await clienteRepository.findByEmail(email); //
+        const cliente = await clienteRepository.findByEmail(email);
         // Não lança erro se o e-mail não existe por segurança (evita enumeração)
         if (!cliente) {
             console.warn(`Tentativa de reset de senha para e-mail não cadastrado: ${email}`);
             return;
         }
 
-        // Gera token de reset (JWT simples com segredo principal)
-        const resetToken = jwt.sign({ id: cliente.id }, authConfig.secret, { //
-            expiresIn: 3600 // 1 hora
-        });
+        // SEGURANÇA: Gera token criptograficamente seguro
+        const resetToken = generateSecureToken(); // 64 chars hex
+        const tokenHash = hashToken(resetToken); // Hash SHA-256
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-        // Envia e-mail em segundo plano
-        emailService.sendPasswordResetEmail(cliente.email, resetToken) //
+        // Armazena apenas o HASH no banco de dados
+        await clienteRepository.setResetPasswordToken(cliente.id, tokenHash, expiresAt);
+
+        // Envia o TOKEN ORIGINAL (não o hash) por e-mail
+        emailService.sendPasswordResetEmail(cliente.email, resetToken)
             .catch(err => {
                 console.error(`[BACKGROUND JOB FAILED] Falha ao enviar e-mail de redefinição para ${email}:`, err);
             });
@@ -218,25 +282,52 @@ class AuthService {
 
     /**
      * Redefine a senha do cliente usando o token de redefinição.
-     * @param {string} token - O token JWT de redefinição.
+     * @param {string} token - O token seguro de redefinição (64 chars hex).
      * @param {string} novaSenha - A nova senha fornecida pelo usuário.
      */
     async resetPassword(token, novaSenha) {
-        let decoded;
-        try {
-            // Verifica usando o segredo principal
-            decoded = jwt.verify(token, authConfig.secret); //
-        } catch (err) {
+        if (!token) {
+            throw new Error('Token de redefinição é obrigatório.');
+        }
+
+        // SEGURANÇA: Hash do token recebido para comparar com o DB
+        const tokenHash = hashToken(token);
+
+        // Busca cliente pelo hash do token (já verifica expiração no SQL)
+        const cliente = await clienteRepository.findByResetPasswordToken(tokenHash);
+
+        if (!cliente) {
             throw new Error('Token de redefinição inválido ou expirado.');
         }
 
+        // SEGURANÇA: Comparação timing-safe
+        if (!compareTokens(tokenHash, cliente.resetPasswordToken)) {
+            throw new Error('Token de redefinição inválido.');
+        }
+
         // Valida a força da nova senha
-        if (!isSenhaForte(novaSenha)) { //
+        if (!isSenhaForte(novaSenha)) {
             throw new Error('A nova senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula, um número e um caractere especial (@$!%*?&).');
         }
 
-        const senhaCriptografada = bcrypt.hashSync(novaSenha, 8); //
-        await clienteRepository.updateSenha(decoded.id, senhaCriptografada); //
+        const senhaCriptografada = bcrypt.hashSync(novaSenha, 8);
+        
+        // SEGURANÇA: Revoga refresh token ao resetar senha
+        await clienteRepository.revokeRefreshToken(cliente.id);
+        
+        // Atualiza a senha e limpa os tokens de reset
+        await clienteRepository.updateSenha(cliente.id, senhaCriptografada);
+        await clienteRepository.clearResetPasswordToken(cliente.id);
+    }
+
+    /**
+     * Faz logout de um cliente revogando seu refresh token.
+     * @param {number} clienteId - O ID do cliente.
+     * @returns {Promise<object>} Mensagem de sucesso.
+     */
+    async logout(clienteId) {
+        await clienteRepository.revokeRefreshToken(clienteId);
+        return { message: 'Logout realizado com sucesso.' };
     }
 }
 

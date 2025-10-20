@@ -9,6 +9,7 @@
     "googleapis": "^162.0.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
     "nodemailer": "^7.0.9",
     "oracledb": "^6.9.0",
     "swagger-ui-express": "^5.0.1",
