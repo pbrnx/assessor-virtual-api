@@ -147,7 +147,7 @@ Siga os passos abaixo para rodar o projeto localmente.
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/seu-usuario/assessor-virtual-api.git](https://github.com/seu-usuario/assessor-virtual-api.git)
+    git clone https://github.com/pebarone/assessor-virtual-api.git
     cd assessor-virtual-api
     ```
 
