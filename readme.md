@@ -60,6 +60,7 @@ A plataforma permite que usuários se cadastrem, verifiquem suas contas por e-ma
     -   **Verificação de E-mail**: Processo de ativação de conta via token enviado por e-mail para garantir a autenticidade do usuário.
     -   **Recuperação de Senha**: Funcionalidade de "Esqueci minha senha" que envia um link de redefinição por e-mail.
     -   **Autenticação JWT**: Uso de JSON Web Tokens (Access e Refresh Tokens) para proteger as rotas da API.
+    -   **Segurança Avançada de Tokens**: Tokens de verificação, reset e refresh são hasheados (SHA-256) no banco de dados para mitigar riscos em caso de vazamento de dados. A comparação é feita usando métodos seguros contra _timing attacks_.
     -   **Controle de Acesso por Papel (Role-Based)**: Distinção entre usuários "cliente" e "admin", com rotas específicas protegidas para administradores (como a gestão de produtos de investimento).
 
 -   **❓ Perfil de Investidor (Suitability)**: Questionário para determinar o perfil do investidor (Conservador, Moderado, Arrojado).
@@ -297,29 +298,7 @@ Siga os passos abaixo para rodar o projeto localmente.
     COMMIT;
     ```
 
-5.  **Execute a migration de segurança (IMPORTANTE):**
-    
-    Se você já tinha o banco criado anteriormente, execute esta migration adicional para os novos campos de segurança:
-    
-    ```sql
-    -- Migration 002: Adicionar campos de expiração de tokens
-    -- Necessário apenas se você já tinha o banco criado sem estes campos
-    
-    ALTER TABLE investimento_cliente 
-    ADD email_verification_token_expires DATE;
-    
-    ALTER TABLE investimento_cliente 
-    ADD refresh_token_expires DATE;
-    
-    COMMIT;
-    ```
-
-6.  **Instale as dependências:**
-    ```bash
-    npm install
-    ```
-
-7.  **Inicie o servidor:**
+6.  **Inicie o servidor:**
     ```bash
     node app.js
     ```
@@ -405,7 +384,6 @@ Siga os passos abaixo para rodar o projeto localmente.
         "valor": 500.00
       }'
     ```
-    *(Nota: Embora o exemplo use `valor`, a API atualmente espera `quantidade` no corpo. O backend faz a conversão internamente.)*
 
 
 ---
