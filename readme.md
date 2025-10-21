@@ -486,6 +486,7 @@ A estrutura do projeto segue os princípios de Clean Architecture e SOLID:
 ```
 
 Cada diretório tem uma responsabilidade específica, seguindo o princípio da Separação de Responsabilidades:
+
     ├── .gitignore              # Arquivos e pastas a serem ignorados pelo Git
     ├── app.js                  # Ponto de entrada da aplicação (servidor)
     ├── package.json            # Dependências e metadados do projeto
